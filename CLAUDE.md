@@ -87,8 +87,10 @@ cat input.png | ps-image resize - --width 400 -o - > output.png
 
 1. **No `-h` for height** - Uses `--height` only (conflicts with `--help`)
 2. **Stdin requires `-`** - Pass `-` as input argument when piping
-3. **WebP decode only** - Can read WebP but not write (pure Go limitation)
-4. **go.mod version** - Uses Go 1.24+, workflows use `go-version-file: go.mod`
+3. **Stdin format auto-detected** - Magic bytes detect PNG, JPEG, GIF, BMP, WebP, TIFF
+4. **Resize has `--format` flag** - Control stdout output format (defaults to input format)
+5. **WebP decode only** - Can read WebP but not write (falls back to PNG)
+6. **go.mod version** - Uses Go 1.24+, workflows use `go-version-file: go.mod`
 
 ## CI/CD
 
