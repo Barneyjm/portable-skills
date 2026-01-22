@@ -22,11 +22,15 @@
   "license": "MIT",
   "author": "Portable Skills",
   "bin": {
-    "ps-image": "./bin/ps-image"
+    "ps-image": "./bin/ps-image",
+    "ps-image-install-skill": "./scripts/install-skill.js",
+    "ps-image-uninstall-skill": "./scripts/uninstall-skill.js"
   },
   "scripts": {
     "postinstall": "node scripts/download-binary.js",
-    "preuninstall": "node scripts/cleanup.js"
+    "preuninstall": "node scripts/cleanup.js",
+    "install-skill": "node scripts/install-skill.js",
+    "uninstall-skill": "node scripts/uninstall-skill.js"
   },
   "files": [
     "bin/",
