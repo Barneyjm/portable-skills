@@ -64,7 +64,7 @@ func Save(img image.Image, path string, opts ...SaveOptions) error {
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	return Encode(f, img, opt)
 }

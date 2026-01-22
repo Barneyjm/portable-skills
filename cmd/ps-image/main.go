@@ -51,7 +51,7 @@ func newResizeCmd() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("failed to read stdin: %w", err)
 				}
-				defer input.Close()
+				defer func() { _ = input.Close() }()
 				inputPath = input.Path
 			}
 
@@ -126,7 +126,7 @@ func newConvertCmd() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("failed to read stdin: %w", err)
 				}
-				defer input.Close()
+				defer func() { _ = input.Close() }()
 				inputPath = input.Path
 			}
 
@@ -175,7 +175,7 @@ func newConvertCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&format, "format", "f", "", "Target format: png, jpg, gif, bmp, tiff (required)")
 	cmd.Flags().StringVarP(&output, "output", "o", "", "Output path (default: <input>.<format>)")
 	cmd.Flags().IntVarP(&quality, "quality", "q", 85, "Output quality for JPEG (1-100)")
-	cmd.MarkFlagRequired("format")
+	_ = cmd.MarkFlagRequired("format")
 
 	return cmd
 }
@@ -197,7 +197,7 @@ func newInfoCmd() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("failed to read stdin: %w", err)
 				}
-				defer input.Close()
+				defer func() { _ = input.Close() }()
 				inputPath = input.Path
 			}
 

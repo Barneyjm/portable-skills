@@ -48,13 +48,13 @@ func NewInputFromStdin(extension string) (*Input, error) {
 	}
 
 	if _, err := io.Copy(tmpFile, os.Stdin); err != nil {
-		tmpFile.Close()
-		os.Remove(tmpFile.Name())
+		_ = tmpFile.Close()
+		_ = os.Remove(tmpFile.Name())
 		return nil, fmt.Errorf("failed to read stdin: %w", err)
 	}
 
 	if err := tmpFile.Close(); err != nil {
-		os.Remove(tmpFile.Name())
+		_ = os.Remove(tmpFile.Name())
 		return nil, fmt.Errorf("failed to close temp file: %w", err)
 	}
 
@@ -88,13 +88,13 @@ func (i *Input) GetPath(extension string) (string, error) {
 	}
 
 	if _, err := io.Copy(tmpFile, i.Reader); err != nil {
-		tmpFile.Close()
-		os.Remove(tmpFile.Name())
+		_ = tmpFile.Close()
+		_ = os.Remove(tmpFile.Name())
 		return "", fmt.Errorf("failed to read stdin: %w", err)
 	}
 
 	if err := tmpFile.Close(); err != nil {
-		os.Remove(tmpFile.Name())
+		_ = os.Remove(tmpFile.Name())
 		return "", fmt.Errorf("failed to close temp file: %w", err)
 	}
 

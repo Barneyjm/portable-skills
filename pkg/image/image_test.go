@@ -35,7 +35,7 @@ func createTestPNGFile(t *testing.T, width, height int) string {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer tmpFile.Close()
+	defer func() { _ = tmpFile.Close() }()
 
 	if err := png.Encode(tmpFile, img); err != nil {
 		t.Fatalf("Failed to encode PNG: %v", err)
@@ -137,7 +137,7 @@ func TestResize(t *testing.T) {
 
 func TestResizeFile(t *testing.T) {
 	testFile := createTestPNGFile(t, 100, 50)
-	defer os.Remove(testFile)
+	defer func() { _ = os.Remove(testFile) }()
 
 	result, err := ResizeFile(testFile, ResizeOptions{Width: 50, Height: 0})
 	if err != nil {
@@ -219,7 +219,7 @@ func TestFormatFromExtension(t *testing.T) {
 func TestLoadAndSave(t *testing.T) {
 	// Create test image
 	testFile := createTestPNGFile(t, 100, 100)
-	defer os.Remove(testFile)
+	defer func() { _ = os.Remove(testFile) }()
 
 	// Load it
 	img, err := Load(testFile)
@@ -246,7 +246,7 @@ func TestLoadAndSave(t *testing.T) {
 	for _, f := range formats {
 		t.Run(string(f.format), func(t *testing.T) {
 			outputPath := filepath.Join(os.TempDir(), "test-output"+f.ext)
-			defer os.Remove(outputPath)
+			defer func() { _ = os.Remove(outputPath) }()
 
 			err := Save(img, outputPath, SaveOptions{Format: f.format, Quality: 85})
 			if err != nil {
@@ -321,7 +321,7 @@ func TestGenerateOutputPath(t *testing.T) {
 
 func TestInfo(t *testing.T) {
 	testFile := createTestPNGFile(t, 100, 50)
-	defer os.Remove(testFile)
+	defer func() { _ = os.Remove(testFile) }()
 
 	meta, err := Info(testFile)
 	if err != nil {
@@ -363,7 +363,7 @@ func TestConvert(t *testing.T) {
 
 func TestConvertFile(t *testing.T) {
 	testFile := createTestPNGFile(t, 50, 50)
-	defer os.Remove(testFile)
+	defer func() { _ = os.Remove(testFile) }()
 
 	result, err := ConvertFile(testFile, ConvertOptions{Format: FormatJPEG})
 	if err != nil {

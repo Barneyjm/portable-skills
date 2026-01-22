@@ -14,9 +14,9 @@ func TestNewInput(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	tmpFile.WriteString("test content")
-	tmpFile.Close()
-	defer os.Remove(tmpFile.Name())
+	_, _ = tmpFile.WriteString("test content")
+	_ = tmpFile.Close()
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	// Test with file path
 	input, err := NewInput(tmpFile.Name())
@@ -26,7 +26,7 @@ func TestNewInput(t *testing.T) {
 	if input.Path != tmpFile.Name() {
 		t.Errorf("Path = %q, want %q", input.Path, tmpFile.Name())
 	}
-	input.Close()
+	_ = input.Close()
 
 	// Test with non-existent file
 	_, err = NewInput("/nonexistent/file/path")
@@ -53,9 +53,9 @@ func TestInputGetPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	tmpFile.WriteString("test content")
-	tmpFile.Close()
-	defer os.Remove(tmpFile.Name())
+	_, _ = tmpFile.WriteString("test content")
+	_ = tmpFile.Close()
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	input, _ := NewInput(tmpFile.Name())
 	path, err := input.GetPath(".txt")
@@ -65,7 +65,7 @@ func TestInputGetPath(t *testing.T) {
 	if path != tmpFile.Name() {
 		t.Errorf("GetPath = %q, want %q", path, tmpFile.Name())
 	}
-	input.Close()
+	_ = input.Close()
 }
 
 func TestNewOutput(t *testing.T) {
@@ -83,8 +83,8 @@ func TestNewOutput(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	tmpFile.Close()
-	defer os.Remove(tmpFile.Name())
+	_ = tmpFile.Close()
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	output, err = NewOutput(tmpFile.Name())
 	if err != nil {
@@ -93,7 +93,7 @@ func TestNewOutput(t *testing.T) {
 	if output.Path != tmpFile.Name() {
 		t.Errorf("Path = %q, want %q", output.Path, tmpFile.Name())
 	}
-	output.Close()
+	_ = output.Close()
 }
 
 func TestResult(t *testing.T) {
@@ -196,8 +196,8 @@ func TestInputClose(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	tmpFile.WriteString("test content")
-	tmpFile.Close()
+	_, _ = tmpFile.WriteString("test content")
+	_ = tmpFile.Close()
 
 	// Create input with temp file flag
 	input := &Input{
@@ -214,7 +214,7 @@ func TestInputClose(t *testing.T) {
 	// Verify file is removed
 	if _, err := os.Stat(tmpFile.Name()); !os.IsNotExist(err) {
 		t.Error("Temp file should have been removed")
-		os.Remove(tmpFile.Name()) // Clean up if test failed
+		_ = os.Remove(tmpFile.Name()) // Clean up if test failed
 	}
 }
 
@@ -228,7 +228,7 @@ func TestWriteJSONFormat(t *testing.T) {
 	var buf bytes.Buffer
 	encoder := json.NewEncoder(&buf)
 	encoder.SetIndent("", "  ")
-	encoder.Encode(data)
+	_ = encoder.Encode(data)
 
 	output := buf.String()
 	if !strings.Contains(output, "\"name\": \"test\"") {

@@ -95,9 +95,9 @@ func detectFormat(path string) string {
 
 // hasAlphaChannel checks if an image has an alpha channel
 func hasAlphaChannel(img interface{}) bool {
-	switch img.(type) {
+	switch v := img.(type) {
 	case interface{ Opaque() bool }:
-		return !img.(interface{ Opaque() bool }).Opaque()
+		return !v.Opaque()
 	default:
 		return false
 	}
@@ -109,7 +109,7 @@ func extractEXIF(inputPath string) (*EXIFData, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	x, err := exif.Decode(f)
 	if err != nil {
