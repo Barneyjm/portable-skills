@@ -1,0 +1,49 @@
+{
+  "name": "@portableskills/image",
+  "version": "1.0.0",
+  "description": "Image processing skill - resize, convert, extract metadata. Downloads native binary.",
+  "keywords": [
+    "image",
+    "resize",
+    "convert",
+    "processing",
+    "cli",
+    "portable",
+    "skill"
+  ],
+  "homepage": "https://github.com/Barneyjm/portable-skills",
+  "bugs": {
+    "url": "https://github.com/Barneyjm/portable-skills/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Barneyjm/portable-skills.git"
+  },
+  "license": "MIT",
+  "author": "Portable Skills",
+  "bin": {
+    "ps-image": "./bin/ps-image"
+  },
+  "scripts": {
+    "postinstall": "node scripts/download-binary.js",
+    "preuninstall": "node scripts/cleanup.js"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=14"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ]
+}

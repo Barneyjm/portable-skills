@@ -1,0 +1,164 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  id-token: write  # For cosign signing
+  packages: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Install syft (for SBOM)
+        uses: anchore/sbom-action/download-syft@v0
+
+      - name: Run tests
+        run: go test -v -race ./...
+
+      - name: Run govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+      - name: Build all binaries
+        run: |
+          mkdir -p dist
+          VERSION="${GITHUB_REF#refs/tags/}"
+
+          # Build matrix
+          for GOOS in linux darwin windows; do
+            for GOARCH in amd64 arm64; do
+              # Skip Windows ARM64
+              if [ "$GOOS" = "windows" ] && [ "$GOARCH" = "arm64" ]; then
+                continue
+              fi
+
+              BINARY_NAME="ps-image-${GOOS}-${GOARCH}"
+              if [ "$GOOS" = "windows" ]; then
+                BINARY_NAME="${BINARY_NAME}.exe"
+              fi
+
+              echo "Building ${BINARY_NAME}..."
+              CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH \
+                go build -ldflags="-s -w -X main.version=${VERSION}" \
+                -o "dist/${BINARY_NAME}" \
+                ./cmd/ps-image
+            done
+          done
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum ps-image-* > checksums.txt
+          cat checksums.txt
+
+      - name: Sign binaries with cosign
+        run: |
+          cd dist
+          for file in ps-image-*; do
+            if [ -f "$file" ] && [ "$file" != "checksums.txt" ]; then
+              echo "Signing ${file}..."
+              cosign sign-blob --yes --output-signature "${file}.sig" --output-certificate "${file}.pem" "$file"
+            fi
+          done
+
+          # Sign checksums file
+          cosign sign-blob --yes --output-signature checksums.txt.sig --output-certificate checksums.txt.pem checksums.txt
+
+      - name: Generate SBOM
+        run: |
+          syft . -o cyclonedx-json > dist/sbom.json
+          cosign sign-blob --yes --output-signature dist/sbom.json.sig --output-certificate dist/sbom.json.pem dist/sbom.json
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') || contains(github.ref, '-alpha') }}
+          generate_release_notes: true
+          files: |
+            dist/ps-image-*
+            dist/checksums.txt
+            dist/checksums.txt.sig
+            dist/checksums.txt.pem
+            dist/sbom.json
+            dist/sbom.json.sig
+            dist/sbom.json.pem
+
+      - name: Update Homebrew tap
+        if: "!contains(github.ref, '-rc') && !contains(github.ref, '-beta') && !contains(github.ref, '-alpha')"
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -n "$HOMEBREW_TAP_TOKEN" ]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+            # This would trigger the homebrew tap update workflow
+            echo "Would update Homebrew tap to version ${VERSION}"
+            # Actual implementation would use the GitHub API to trigger
+            # a workflow in the portableskills/homebrew-tap repository
+          fi
+
+  verify-signatures:
+    name: Verify Release Signatures
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          gh release download "$VERSION" --repo "$GITHUB_REPOSITORY" --dir release
+
+      - name: Verify signatures
+        run: |
+          cd release
+
+          # Verify checksums signature
+          cosign verify-blob \
+            --signature checksums.txt.sig \
+            --certificate checksums.txt.pem \
+            --certificate-identity-regexp "https://github.com/${GITHUB_REPOSITORY}/*" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            checksums.txt
+
+          echo "✓ Checksums signature verified"
+
+          # Verify each binary
+          for file in ps-image-*; do
+            if [ -f "$file" ] && [[ ! "$file" =~ \.(sig|pem)$ ]]; then
+              cosign verify-blob \
+                --signature "${file}.sig" \
+                --certificate "${file}.pem" \
+                --certificate-identity-regexp "https://github.com/${GITHUB_REPOSITORY}/*" \
+                --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+                "$file"
+              echo "✓ ${file} signature verified"
+            fi
+          done
+
+          # Verify checksums match
+          sha256sum -c checksums.txt
+          echo "✓ All checksums match"
