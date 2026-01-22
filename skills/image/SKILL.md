@@ -20,7 +20,7 @@ ps-image resize <input> --width <px> [--height <px>] [--output <path>]
 
 **Flags:**
 - `-w, --width`: Target width in pixels
-- `-h, --height`: Target height in pixels
+- `--height`: Target height in pixels
 - `-o, --output`: Output path (default: `<input>_resized.<ext>`)
 - `--fit`: Fit mode: `contain` (default), `cover`, `fill`
 - `-q, --quality`: Output quality for JPEG (1-100, default: 85)
@@ -39,7 +39,7 @@ ps-image resize photo.jpg --width 800
 ps-image resize photo.jpg --width 800 --height 600 --fit cover
 
 # Read from stdin, write to stdout
-cat input.png | ps-image resize --width 400 -o - > output.png
+cat input.png | ps-image resize - --width 400 -o - > output.png
 ```
 
 ### convert
@@ -126,10 +126,10 @@ All commands support `-` for stdin input and `-o -` for stdout output:
 
 ```bash
 # Pipe from another command
-curl -s https://example.com/image.png | ps-image resize --width 400 -o - > thumbnail.png
+curl -s https://example.com/image.png | ps-image resize - --width 400 -o - > thumbnail.png
 
 # Chain commands
-cat large.png | ps-image resize --width 800 -o - | ps-image convert --format jpg -o - > result.jpg
+cat large.png | ps-image resize - --width 800 -o - | ps-image convert - --format jpg -o - > result.jpg
 ```
 
 ## Installation

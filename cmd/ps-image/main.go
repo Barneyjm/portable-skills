@@ -97,7 +97,7 @@ func newResizeCmd() *cobra.Command {
 	}
 
 	cmd.Flags().IntVarP(&width, "width", "w", 0, "Target width in pixels")
-	cmd.Flags().IntVarP(&height, "height", "h", 0, "Target height in pixels")
+	cmd.Flags().IntVar(&height, "height", 0, "Target height in pixels")
 	cmd.Flags().StringVarP(&output, "output", "o", "", "Output path (default: <input>_resized.<ext>)")
 	cmd.Flags().StringVar(&fit, "fit", "contain", "Fit mode: contain, cover, fill")
 	cmd.Flags().IntVarP(&quality, "quality", "q", 85, "Output quality for JPEG (1-100)")

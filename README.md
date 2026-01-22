@@ -108,10 +108,10 @@ ps-image info photo.jpg --json
 
 ```bash
 # Pipe from curl
-curl -s https://example.com/image.png | ps-image resize --width 400 -o - > thumbnail.png
+curl -s https://example.com/image.png | ps-image resize - --width 400 -o - > thumbnail.png
 
 # Chain commands
-cat large.png | ps-image resize --width 800 -o - | ps-image convert --format jpg -o - > result.jpg
+cat large.png | ps-image resize - --width 800 -o - | ps-image convert - --format jpg -o - > result.jpg
 ```
 
 ## Security
