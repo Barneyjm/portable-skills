@@ -1,0 +1,32 @@
+#!/usr/bin/env node
+
+const { spawn } = require('child_process');
+const path = require('path');
+const os = require('os');
+const fs = require('fs');
+
+// Get the binary path
+const binName = os.platform() === 'win32' ? 'ps-image.exe' : 'ps-image';
+const binPath = path.join(__dirname, binName);
+
+// Check if binary exists
+if (!fs.existsSync(binPath)) {
+  console.error('Error: ps-image binary not found.');
+  console.error('Please run: npm install @portableskills/image');
+  process.exit(1);
+}
+
+// Execute the binary with all arguments
+const child = spawn(binPath, process.argv.slice(2), {
+  stdio: 'inherit',
+  windowsHide: true,
+});
+
+child.on('error', (error) => {
+  console.error('Failed to execute ps-image:', error.message);
+  process.exit(1);
+});
+
+child.on('exit', (code) => {
+  process.exit(code || 0);
+});
