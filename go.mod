@@ -1,6 +1,8 @@
 module github.com/Barneyjm/portable-skills
 
-go 1.24.7
+go 1.24.0
+
+toolchain go1.24.7
 
 require (
 	github.com/disintegration/imaging v1.6.2
