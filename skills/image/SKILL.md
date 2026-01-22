@@ -24,6 +24,7 @@ ps-image resize <input> --width <px> [--height <px>] [--output <path>]
 - `-o, --output`: Output path (default: `<input>_resized.<ext>`)
 - `--fit`: Fit mode: `contain` (default), `cover`, `fill`
 - `-q, --quality`: Output quality for JPEG (1-100, default: 85)
+- `-f, --format`: Output format for stdout (png, jpg, gif, bmp, tiff); auto-detected if not specified
 
 **Fit Modes:**
 - `contain`: Fit within dimensions, preserving aspect ratio (default)
@@ -122,7 +123,7 @@ Note: WebP decode is supported but encoding requires a different format output.
 
 ## Stdin/Stdout Support
 
-All commands support `-` for stdin input and `-o -` for stdout output:
+All commands support `-` for stdin input and `-o -` for stdout output. **Format is auto-detected** from magic bytes when reading from stdin, so you can pipe any supported format:
 
 ```bash
 # Pipe from another command

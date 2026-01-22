@@ -11,13 +11,13 @@
     "portable",
     "skill"
   ],
-  "homepage": "https://github.com/portableskills/portable-skills",
+  "homepage": "https://github.com/Barneyjm/portable-skills",
   "bugs": {
-    "url": "https://github.com/portableskills/portable-skills/issues"
+    "url": "https://github.com/Barneyjm/portable-skills/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/portableskills/portable-skills.git"
+    "url": "git+https://github.com/Barneyjm/portable-skills.git"
   },
   "license": "MIT",
   "author": "Portable Skills",

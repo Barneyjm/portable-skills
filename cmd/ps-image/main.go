@@ -30,11 +30,12 @@ func main() {
 
 func newResizeCmd() *cobra.Command {
 	var (
-		width   int
-		height  int
-		output  string
-		fit     string
-		quality int
+		width        int
+		height       int
+		output       string
+		fit          string
+		quality      int
+		outputFormat string
 	)
 
 	cmd := &cobra.Command{
@@ -44,15 +45,17 @@ func newResizeCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			inputPath := args[0]
+			var detectedFormat string
 
 			// Handle stdin
 			if inputPath == "-" {
-				input, err := skill.NewInputFromStdin(".png")
+				input, err := skill.NewInputFromStdin()
 				if err != nil {
 					return fmt.Errorf("failed to read stdin: %w", err)
 				}
 				defer func() { _ = input.Close() }()
 				inputPath = input.Path
+				detectedFormat = input.DetectedFormat
 			}
 
 			// Validate dimensions
@@ -80,8 +83,29 @@ func newResizeCmd() *cobra.Command {
 
 			// Handle stdout
 			if output == "-" {
+				// Determine output format for stdout
+				var stdoutFormat image.Format
+				if outputFormat != "" {
+					// User specified format explicitly
+					stdoutFormat = image.NormalizeFormat(outputFormat)
+					if !image.IsSupported(stdoutFormat) {
+						return fmt.Errorf("unsupported output format: %s", outputFormat)
+					}
+				} else if detectedFormat != "" {
+					// Use detected format from stdin
+					stdoutFormat = image.NormalizeFormat(detectedFormat)
+				} else {
+					// Use input file's format
+					stdoutFormat = image.FormatFromExtension(inputPath)
+				}
+
+				// WebP can't be encoded, fall back to PNG
+				if stdoutFormat == image.FormatWEBP {
+					stdoutFormat = image.FormatPNG
+				}
+
 				return image.Encode(os.Stdout, resized, image.SaveOptions{
-					Format:  image.FormatPNG,
+					Format:  stdoutFormat,
 					Quality: quality,
 				})
 			}
@@ -101,6 +125,7 @@ func newResizeCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&output, "output", "o", "", "Output path (default: <input>_resized.<ext>)")
 	cmd.Flags().StringVar(&fit, "fit", "contain", "Fit mode: contain, cover, fill")
 	cmd.Flags().IntVarP(&quality, "quality", "q", 85, "Output quality for JPEG (1-100)")
+	cmd.Flags().StringVarP(&outputFormat, "format", "f", "", "Output format for stdout (png, jpg, gif, bmp, tiff)")
 
 	return cmd
 }
@@ -122,7 +147,7 @@ func newConvertCmd() *cobra.Command {
 
 			// Handle stdin
 			if inputPath == "-" {
-				input, err := skill.NewInputFromStdin(".png")
+				input, err := skill.NewInputFromStdin()
 				if err != nil {
 					return fmt.Errorf("failed to read stdin: %w", err)
 				}
@@ -193,7 +218,7 @@ func newInfoCmd() *cobra.Command {
 
 			// Handle stdin
 			if inputPath == "-" {
-				input, err := skill.NewInputFromStdin(".png")
+				input, err := skill.NewInputFromStdin()
 				if err != nil {
 					return fmt.Errorf("failed to read stdin: %w", err)
 				}
