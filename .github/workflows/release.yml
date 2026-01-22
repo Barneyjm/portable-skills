@@ -89,6 +89,11 @@ jobs:
           syft . -o cyclonedx-json > dist/sbom.json
           cosign sign-blob --yes --output-signature dist/sbom.json.sig --output-certificate dist/sbom.json.pem dist/sbom.json
 
+      - name: Copy skill manifests
+        run: |
+          # Include SKILL.md files for each skill
+          cp skills/image/SKILL.md dist/SKILL-image.md
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -97,6 +102,7 @@ jobs:
           generate_release_notes: true
           files: |
             dist/ps-image-*
+            dist/SKILL-image.md
             dist/checksums.txt
             dist/checksums.txt.sig
             dist/checksums.txt.pem

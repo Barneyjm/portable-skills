@@ -49,6 +49,10 @@ function getChecksumsUrl() {
   return `https://github.com/${REPO}/releases/download/v${VERSION}/checksums.txt`;
 }
 
+function getSkillMdUrl() {
+  return `https://github.com/${REPO}/releases/download/v${VERSION}/SKILL-image.md`;
+}
+
 async function downloadFile(url, destPath) {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(destPath);
@@ -170,6 +174,12 @@ async function main() {
     }
 
     console.log(`✓ Successfully installed ${BINARY_NAME} to ${destPath}`);
+
+    // Download SKILL.md (required for skill functionality)
+    const skillMdPath = path.join(binDir, 'SKILL.md');
+    console.log('Downloading SKILL.md...');
+    await downloadFile(getSkillMdUrl(), skillMdPath);
+    console.log(`✓ Successfully installed SKILL.md to ${skillMdPath}`);
   } catch (error) {
     console.error(`Failed to install ${BINARY_NAME}:`, error.message);
 

@@ -7,21 +7,19 @@ class PsImage < Formula
   version "1.0.0"
   license "MIT"
 
+  # SKILL.md is required for AI agent integration
+  resource "skill_md" do
+    url "https://github.com/Barneyjm/portable-skills/releases/download/v1.0.0/SKILL-image.md"
+    sha256 "PLACEHOLDER_SHA256_SKILL_MD"
+  end
+
   on_macos do
     if Hardware::CPU.arm?
       url "https://github.com/Barneyjm/portable-skills/releases/download/v#{version}/ps-image-darwin-arm64"
       sha256 "PLACEHOLDER_SHA256_DARWIN_ARM64"
-
-      def install
-        bin.install "ps-image-darwin-arm64" => "ps-image"
-      end
     else
       url "https://github.com/Barneyjm/portable-skills/releases/download/v#{version}/ps-image-darwin-amd64"
       sha256 "PLACEHOLDER_SHA256_DARWIN_AMD64"
-
-      def install
-        bin.install "ps-image-darwin-amd64" => "ps-image"
-      end
     end
   end
 
@@ -29,17 +27,20 @@ class PsImage < Formula
     if Hardware::CPU.arm?
       url "https://github.com/Barneyjm/portable-skills/releases/download/v#{version}/ps-image-linux-arm64"
       sha256 "PLACEHOLDER_SHA256_LINUX_ARM64"
-
-      def install
-        bin.install "ps-image-linux-arm64" => "ps-image"
-      end
     else
       url "https://github.com/Barneyjm/portable-skills/releases/download/v#{version}/ps-image-linux-amd64"
       sha256 "PLACEHOLDER_SHA256_LINUX_AMD64"
+    end
+  end
 
-      def install
-        bin.install "ps-image-linux-amd64" => "ps-image"
-      end
+  def install
+    # Install the binary with correct name
+    binary_name = Dir["ps-image-*"].first
+    bin.install binary_name => "ps-image"
+
+    # Install SKILL.md for AI agent integration
+    resource("skill_md").stage do
+      (share/"portable-skills"/"image").install "SKILL-image.md" => "SKILL.md"
     end
   end
 
@@ -51,6 +52,11 @@ class PsImage < Formula
         ps-image resize <input> --width 800
         ps-image convert <input> --format png
         ps-image info <input> --json
+
+      For AI agent integration (Claude Code skill):
+        mkdir -p ~/.claude/skills/image
+        cp #{share}/portable-skills/image/SKILL.md ~/.claude/skills/image/
+        ln -sf #{bin}/ps-image ~/.claude/skills/image/
 
       For more information:
         ps-image --help
