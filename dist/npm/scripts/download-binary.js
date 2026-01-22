@@ -1,14 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * Downloads the platform-specific binary and SKILL.md for a portable-skill.
+ * Downloads the platform-specific binary for portable-skills.
  *
- * Configuration is read from package.json:
- *   "portableSkill": {
- *     "name": "image",
- *     "binary": "ps-image",
- *     "skillMdFile": "SKILL-image.md"
- *   }
+ * SKILL.md is embedded in the binary itself, so we only need
+ * to download the binary. Run `ps-image install-skill` after
+ * installation to set up the Claude Code skill.
  */
 
 const https = require('https');
@@ -26,7 +23,6 @@ function getConfig() {
     version: packageJson.version,
     repo: packageJson.repository.url.replace('git+https://github.com/', '').replace('.git', ''),
     binary: packageJson.portableSkill?.binary || packageJson.name.split('/').pop(),
-    skillMdFile: packageJson.portableSkill?.skillMdFile || 'SKILL.md',
   };
 }
 
@@ -34,7 +30,6 @@ const config = getConfig();
 const VERSION = config.version;
 const REPO = config.repo;
 const BINARY_NAME = config.binary;
-const SKILL_MD_FILE = config.skillMdFile;
 
 // Platform and architecture mapping
 const PLATFORM_MAP = {
@@ -73,10 +68,6 @@ function getDownloadUrl(binaryName) {
 
 function getChecksumsUrl() {
   return `https://github.com/${REPO}/releases/download/v${VERSION}/checksums.txt`;
-}
-
-function getSkillMdUrl() {
-  return `https://github.com/${REPO}/releases/download/v${VERSION}/${SKILL_MD_FILE}`;
 }
 
 async function downloadFile(url, destPath) {
@@ -200,12 +191,9 @@ async function main() {
     }
 
     console.log(`✓ Successfully installed ${BINARY_NAME} to ${destPath}`);
-
-    // Download SKILL.md (required for skill functionality)
-    const skillMdPath = path.join(binDir, 'SKILL.md');
-    console.log('Downloading SKILL.md...');
-    await downloadFile(getSkillMdUrl(), skillMdPath);
-    console.log(`✓ Successfully installed SKILL.md to ${skillMdPath}`);
+    console.log('');
+    console.log('To install as a Claude Code skill, run:');
+    console.log(`  ${BINARY_NAME} install-skill`);
   } catch (error) {
     console.error(`Failed to install ${BINARY_NAME}:`, error.message);
 

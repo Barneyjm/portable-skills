@@ -1,15 +1,14 @@
 {
-  "name": "@portableskills/image",
+  "name": "portable-skills",
   "version": "1.0.0",
-  "description": "Image processing skill - resize, convert, extract metadata. Downloads native binary.",
+  "description": "Pre-compiled tools for AI agent skills. Zero dependencies, works everywhere.",
   "keywords": [
+    "ai",
+    "agent",
+    "skill",
     "image",
-    "resize",
-    "convert",
-    "processing",
     "cli",
-    "portable",
-    "skill"
+    "portable"
   ],
   "homepage": "https://github.com/Barneyjm/portable-skills",
   "bugs": {
@@ -22,15 +21,10 @@
   "license": "MIT",
   "author": "Portable Skills",
   "bin": {
-    "ps-image": "./bin/ps-image",
-    "ps-image-install-skill": "./scripts/install-skill.js",
-    "ps-image-uninstall-skill": "./scripts/uninstall-skill.js"
+    "ps-image": "./bin/ps-image"
   },
   "scripts": {
-    "postinstall": "node scripts/download-binary.js",
-    "preuninstall": "node scripts/cleanup.js",
-    "install-skill": "node scripts/install-skill.js",
-    "uninstall-skill": "node scripts/uninstall-skill.js"
+    "postinstall": "node scripts/download-binary.js"
   },
   "files": [
     "bin/",
@@ -52,7 +46,6 @@
   ],
   "portableSkill": {
     "name": "image",
-    "binary": "ps-image",
-    "skillMdFile": "SKILL-image.md"
+    "binary": "ps-image"
   }
 }
