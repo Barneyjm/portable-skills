@@ -26,11 +26,11 @@ type Flag struct {
 
 // Manifest represents a SKILL.md definition
 type Manifest struct {
-	Name        string
-	Description string
-	Version     string
-	Commands    []Command
-	Formats     []string // Supported formats (for file-based skills)
+	Name         string
+	Description  string
+	Version      string
+	Commands     []Command
+	Formats      []string // Supported formats (for file-based skills)
 	Installation string
 }
 

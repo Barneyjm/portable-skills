@@ -41,9 +41,12 @@ All pure Go (no CGO):
 - `github.com/spf13/cobra` - CLI framework
 - `golang.org/x/image` - Additional format support (webp, bmp, tiff)
 
-## Building
+## Getting Started
 
 ```bash
+# First time setup: install git hooks
+./scripts/setup-hooks.sh
+
 # Build for current platform
 go build -o ps-image ./cmd/ps-image
 
@@ -53,6 +56,51 @@ go test -v ./...
 # Run linter
 golangci-lint run --timeout=5m
 ```
+
+## Pre-Commit Hooks
+
+This project uses git pre-commit hooks to ensure code quality. The hooks run automatically before each commit and check:
+
+1. **Go Formatting (gofmt)** - All Go code must be properly formatted
+2. **Static Analysis (go vet)** - Catches common mistakes like format string issues
+3. **Linting (golangci-lint)** - Comprehensive checks including:
+   - All errors must be handled (use `_ =` to explicitly ignore)
+   - No unused variables or imports
+   - No security issues (gosec)
+4. **Unit Tests** - All tests must pass
+
+### Setup Hooks
+
+```bash
+# Install hooks (first time setup)
+./scripts/setup-hooks.sh
+
+# Run checks manually without committing
+./scripts/setup-hooks.sh check
+
+# Check hook status
+./scripts/setup-hooks.sh status
+
+# Check for required tools
+./scripts/setup-hooks.sh tools
+```
+
+### Bypassing Hooks (Emergency Only)
+
+```bash
+git commit --no-verify
+```
+
+**Warning**: Only use `--no-verify` in genuine emergencies. CI will fail if you bypass hooks.
+
+### Common Hook Failures
+
+| Error | Fix |
+|-------|-----|
+| `gofmt` issues | Run `gofmt -w .` |
+| Unchecked error | Add `_ =` before ignored errors, or handle the error |
+| Unused variable | Remove it or use it |
+| Test failure | Fix the failing test or code |
 
 ## Installing as a Skill
 
