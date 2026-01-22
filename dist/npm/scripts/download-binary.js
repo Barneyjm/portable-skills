@@ -1,14 +1,40 @@
 #!/usr/bin/env node
 
+/**
+ * Downloads the platform-specific binary and SKILL.md for a portable-skill.
+ *
+ * Configuration is read from package.json:
+ *   "portableSkill": {
+ *     "name": "image",
+ *     "binary": "ps-image",
+ *     "skillMdFile": "SKILL-image.md"
+ *   }
+ */
+
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.0.0';
-const REPO = 'Barneyjm/portable-skills';
-const BINARY_NAME = 'ps-image';
+// Read configuration from package.json
+function getConfig() {
+  const packageJsonPath = path.join(__dirname, '..', 'package.json');
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+
+  return {
+    version: packageJson.version,
+    repo: packageJson.repository.url.replace('git+https://github.com/', '').replace('.git', ''),
+    binary: packageJson.portableSkill?.binary || packageJson.name.split('/').pop(),
+    skillMdFile: packageJson.portableSkill?.skillMdFile || 'SKILL.md',
+  };
+}
+
+const config = getConfig();
+const VERSION = config.version;
+const REPO = config.repo;
+const BINARY_NAME = config.binary;
+const SKILL_MD_FILE = config.skillMdFile;
 
 // Platform and architecture mapping
 const PLATFORM_MAP = {
@@ -50,7 +76,7 @@ function getChecksumsUrl() {
 }
 
 function getSkillMdUrl() {
-  return `https://github.com/${REPO}/releases/download/v${VERSION}/SKILL-image.md`;
+  return `https://github.com/${REPO}/releases/download/v${VERSION}/${SKILL_MD_FILE}`;
 }
 
 async function downloadFile(url, destPath) {

@@ -49,5 +49,10 @@
   "cpu": [
     "x64",
     "arm64"
-  ]
+  ],
+  "portableSkill": {
+    "name": "image",
+    "binary": "ps-image",
+    "skillMdFile": "SKILL-image.md"
+  }
 }

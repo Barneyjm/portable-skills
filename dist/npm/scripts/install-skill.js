@@ -1,13 +1,19 @@
 #!/usr/bin/env node
 
 /**
- * Safely installs ps-image as a Claude Code skill.
+ * Safely installs a portable-skills binary as a Claude Code skill.
  *
  * This script is a "good skill citizen":
- * - Only creates/modifies ~/.claude/skills/image/
+ * - Only creates/modifies ~/.claude/skills/<skill-name>/
  * - Never touches other skills directories
  * - Creates parent directories safely with mkdir -p equivalent
  * - Warns before overwriting existing files
+ *
+ * Configuration is read from package.json:
+ *   "portableSkill": {
+ *     "name": "image",
+ *     "binary": "ps-image"
+ *   }
  */
 
 const fs = require('fs');
@@ -15,8 +21,23 @@ const path = require('path');
 const os = require('os');
 const readline = require('readline');
 
-const SKILL_NAME = 'image';
-const BINARY_NAME = 'ps-image';
+// Read configuration from package.json
+function getConfig() {
+  const packageJsonPath = path.join(__dirname, '..', 'package.json');
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+
+  if (!packageJson.portableSkill) {
+    console.error('Error: package.json missing "portableSkill" configuration');
+    console.error('Expected: { "portableSkill": { "name": "...", "binary": "..." } }');
+    process.exit(1);
+  }
+
+  return packageJson.portableSkill;
+}
+
+const config = getConfig();
+const SKILL_NAME = config.name;
+const BINARY_NAME = config.binary;
 
 function getSkillsDir() {
   return path.join(os.homedir(), '.claude', 'skills');

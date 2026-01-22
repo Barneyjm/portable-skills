@@ -1,12 +1,18 @@
 #!/usr/bin/env node
 
 /**
- * Safely uninstalls ps-image from Claude Code skills.
+ * Safely uninstalls a portable-skills binary from Claude Code skills.
  *
  * This script is a "good skill citizen":
- * - Only removes ~/.claude/skills/image/
+ * - Only removes ~/.claude/skills/<skill-name>/
  * - Never touches other skills directories
  * - Confirms before deleting
+ *
+ * Configuration is read from package.json:
+ *   "portableSkill": {
+ *     "name": "image",
+ *     "binary": "ps-image"
+ *   }
  */
 
 const fs = require('fs');
@@ -14,7 +20,22 @@ const path = require('path');
 const os = require('os');
 const readline = require('readline');
 
-const SKILL_NAME = 'image';
+// Read configuration from package.json
+function getConfig() {
+  const packageJsonPath = path.join(__dirname, '..', 'package.json');
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+
+  if (!packageJson.portableSkill) {
+    console.error('Error: package.json missing "portableSkill" configuration');
+    console.error('Expected: { "portableSkill": { "name": "...", "binary": "..." } }');
+    process.exit(1);
+  }
+
+  return packageJson.portableSkill;
+}
+
+const config = getConfig();
+const SKILL_NAME = config.name;
 
 function getOurSkillDir() {
   return path.join(os.homedir(), '.claude', 'skills', SKILL_NAME);
