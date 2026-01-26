@@ -10,6 +10,9 @@ permissions:
   id-token: write  # For cosign signing
   packages: write
 
+env:
+  SKILLS: "ps-image ps-hash ps-qr ps-archive ps-audio"
+
 jobs:
   release:
     name: Release
@@ -44,38 +47,39 @@ jobs:
           mkdir -p dist
           VERSION="${GITHUB_REF#refs/tags/}"
 
-          # Build matrix
-          for GOOS in linux darwin windows; do
-            for GOARCH in amd64 arm64; do
-              # Skip Windows ARM64
-              if [ "$GOOS" = "windows" ] && [ "$GOARCH" = "arm64" ]; then
-                continue
-              fi
+          for SKILL in $SKILLS; do
+            for GOOS in linux darwin windows; do
+              for GOARCH in amd64 arm64; do
+                # Skip Windows ARM64
+                if [ "$GOOS" = "windows" ] && [ "$GOARCH" = "arm64" ]; then
+                  continue
+                fi
 
-              BINARY_NAME="ps-image-${GOOS}-${GOARCH}"
-              if [ "$GOOS" = "windows" ]; then
-                BINARY_NAME="${BINARY_NAME}.exe"
-              fi
+                BINARY_NAME="${SKILL}-${GOOS}-${GOARCH}"
+                if [ "$GOOS" = "windows" ]; then
+                  BINARY_NAME="${BINARY_NAME}.exe"
+                fi
 
-              echo "Building ${BINARY_NAME}..."
-              CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH \
-                go build -ldflags="-s -w -X main.version=${VERSION}" \
-                -o "dist/${BINARY_NAME}" \
-                ./cmd/ps-image
+                echo "Building ${BINARY_NAME}..."
+                CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH \
+                  go build -ldflags="-s -w -X main.version=${VERSION}" \
+                  -o "dist/${BINARY_NAME}" \
+                  ./cmd/${SKILL}
+              done
             done
           done
 
       - name: Generate checksums
         run: |
           cd dist
-          sha256sum ps-image-* > checksums.txt
+          sha256sum ps-* > checksums.txt
           cat checksums.txt
 
       - name: Sign binaries with cosign
         run: |
           cd dist
-          for file in ps-image-*; do
-            if [ -f "$file" ] && [ "$file" != "checksums.txt" ]; then
+          for file in ps-*; do
+            if [ -f "$file" ] && [[ ! "$file" =~ \.(sig|pem|txt|md|json)$ ]]; then
               echo "Signing ${file}..."
               cosign sign-blob --yes --output-signature "${file}.sig" --output-certificate "${file}.pem" "$file"
             fi
@@ -93,6 +97,10 @@ jobs:
         run: |
           # Include SKILL.md files for each skill
           cp skills/image/SKILL.md dist/SKILL-image.md
+          cp skills/hash/SKILL.md dist/SKILL-hash.md
+          cp skills/qr/SKILL.md dist/SKILL-qr.md
+          cp skills/archive/SKILL.md dist/SKILL-archive.md
+          cp skills/audio/SKILL.md dist/SKILL-audio.md
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -101,8 +109,8 @@ jobs:
           prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') || contains(github.ref, '-alpha') }}
           generate_release_notes: true
           files: |
-            dist/ps-image-*
-            dist/SKILL-image.md
+            dist/ps-*
+            dist/SKILL-*.md
             dist/checksums.txt
             dist/checksums.txt.sig
             dist/checksums.txt.pem
@@ -117,10 +125,7 @@ jobs:
         run: |
           if [ -n "$HOMEBREW_TAP_TOKEN" ]; then
             VERSION="${GITHUB_REF#refs/tags/v}"
-            # This would trigger the homebrew tap update workflow
             echo "Would update Homebrew tap to version ${VERSION}"
-            # Actual implementation would use the GitHub API to trigger
-            # a workflow in the portableskills/homebrew-tap repository
           fi
 
   verify-signatures:
@@ -153,8 +158,8 @@ jobs:
           echo "✓ Checksums signature verified"
 
           # Verify each binary
-          for file in ps-image-*; do
-            if [ -f "$file" ] && [[ ! "$file" =~ \.(sig|pem)$ ]]; then
+          for file in ps-*; do
+            if [ -f "$file" ] && [[ ! "$file" =~ \.(sig|pem|txt|md|json)$ ]]; then
               cosign verify-blob \
                 --signature "${file}.sig" \
                 --certificate "${file}.pem" \

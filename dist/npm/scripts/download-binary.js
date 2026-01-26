@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * Downloads the platform-specific binary for portable-skills.
+ * Downloads all platform-specific binaries for portable-skills.
  *
- * SKILL.md is embedded in the binary itself, so we only need
- * to download the binary. Run `ps-image install-skill` after
- * installation to set up the Claude Code skill.
+ * SKILL.md is embedded in each binary, so we only need to download
+ * the binaries. Run `<binary> install-skill` after installation
+ * to set up each Claude Code skill.
  */
 
 const https = require('https');
@@ -22,14 +22,14 @@ function getConfig() {
   return {
     version: packageJson.version,
     repo: packageJson.repository.url.replace('git+https://github.com/', '').replace('.git', ''),
-    binary: packageJson.portableSkill?.binary || packageJson.name.split('/').pop(),
+    binaries: packageJson.portableSkills?.binaries || ['ps-image'],
   };
 }
 
 const config = getConfig();
 const VERSION = config.version;
 const REPO = config.repo;
-const BINARY_NAME = config.binary;
+const BINARIES = config.binaries;
 
 // Platform and architecture mapping
 const PLATFORM_MAP = {
@@ -43,7 +43,7 @@ const ARCH_MAP = {
   arm64: 'arm64',
 };
 
-function getBinaryName() {
+function getPlatformArch() {
   const platform = PLATFORM_MAP[os.platform()];
   const arch = ARCH_MAP[os.arch()];
 
@@ -58,12 +58,21 @@ function getBinaryName() {
     process.exit(1);
   }
 
-  const ext = platform === 'windows' ? '.exe' : '';
-  return `${BINARY_NAME}-${platform}-${arch}${ext}`;
+  return { platform, arch };
 }
 
-function getDownloadUrl(binaryName) {
-  return `https://github.com/${REPO}/releases/download/v${VERSION}/${binaryName}`;
+function getRemoteBinaryName(binaryName, platform, arch) {
+  const ext = platform === 'windows' ? '.exe' : '';
+  return `${binaryName}-${platform}-${arch}${ext}`;
+}
+
+function getLocalBinaryName(binaryName) {
+  const ext = os.platform() === 'win32' ? '.exe' : '';
+  return `${binaryName}${ext}`;
+}
+
+function getDownloadUrl(remoteBinaryName) {
+  return `https://github.com/${REPO}/releases/download/v${VERSION}/${remoteBinaryName}`;
 }
 
 function getChecksumsUrl() {
@@ -76,7 +85,6 @@ async function downloadFile(url, destPath) {
 
     const request = (urlStr) => {
       https.get(urlStr, (response) => {
-        // Handle redirects
         if (response.statusCode === 301 || response.statusCode === 302) {
           file.close();
           fs.unlinkSync(destPath);
@@ -98,7 +106,7 @@ async function downloadFile(url, destPath) {
         });
       }).on('error', (err) => {
         file.close();
-        fs.unlinkSync(destPath);
+        if (fs.existsSync(destPath)) fs.unlinkSync(destPath);
         reject(err);
       });
     };
@@ -111,7 +119,6 @@ async function fetchText(url) {
   return new Promise((resolve, reject) => {
     const request = (urlStr) => {
       https.get(urlStr, (response) => {
-        // Handle redirects
         if (response.statusCode === 301 || response.statusCode === 302) {
           request(response.headers.location);
           return;
@@ -142,10 +149,10 @@ function calculateSha256(filePath) {
   });
 }
 
-async function verifyChecksum(filePath, binaryName, checksums) {
-  const expectedLine = checksums.split('\n').find((line) => line.includes(binaryName));
+async function verifyChecksum(filePath, remoteBinaryName, checksums) {
+  const expectedLine = checksums.split('\n').find((line) => line.includes(remoteBinaryName));
   if (!expectedLine) {
-    throw new Error(`Checksum not found for ${binaryName}`);
+    throw new Error(`Checksum not found for ${remoteBinaryName}`);
   }
 
   const expectedHash = expectedLine.split(/\s+/)[0];
@@ -153,55 +160,64 @@ async function verifyChecksum(filePath, binaryName, checksums) {
 
   if (expectedHash !== actualHash) {
     throw new Error(
-      `Checksum mismatch for ${binaryName}:\n` +
+      `Checksum mismatch for ${remoteBinaryName}:\n` +
       `  Expected: ${expectedHash}\n` +
       `  Actual:   ${actualHash}`
     );
   }
+}
 
-  console.log(`✓ Checksum verified for ${binaryName}`);
+async function downloadBinary(binaryName, binDir, platform, arch, checksums) {
+  const remoteName = getRemoteBinaryName(binaryName, platform, arch);
+  const localName = getLocalBinaryName(binaryName);
+  const destPath = path.join(binDir, localName);
+  const downloadUrl = getDownloadUrl(remoteName);
+
+  console.log(`  Downloading ${binaryName}...`);
+  await downloadFile(downloadUrl, destPath);
+  await verifyChecksum(destPath, remoteName, checksums);
+
+  if (os.platform() !== 'win32') {
+    fs.chmodSync(destPath, 0o755);
+  }
+
+  console.log(`  ✓ ${binaryName}`);
 }
 
 async function main() {
   const binDir = path.join(__dirname, '..', 'bin');
-  const binaryName = getBinaryName();
-  const destPath = path.join(binDir, os.platform() === 'win32' ? `${BINARY_NAME}.exe` : BINARY_NAME);
+  const { platform, arch } = getPlatformArch();
 
   // Create bin directory
   if (!fs.existsSync(binDir)) {
     fs.mkdirSync(binDir, { recursive: true });
   }
 
-  console.log(`Downloading ${BINARY_NAME} v${VERSION} for ${os.platform()}-${os.arch()}...`);
+  console.log(`Downloading portable-skills v${VERSION} for ${os.platform()}-${os.arch()}...`);
+  console.log(`Skills: ${BINARIES.join(', ')}`);
+  console.log('');
 
   try {
-    // Download binary
-    const downloadUrl = getDownloadUrl(binaryName);
-    console.log(`Fetching from: ${downloadUrl}`);
-    await downloadFile(downloadUrl, destPath);
-
-    // Download and verify checksums
-    console.log('Verifying checksum...');
+    // Fetch checksums once for all binaries
     const checksums = await fetchText(getChecksumsUrl());
-    await verifyChecksum(destPath, binaryName, checksums);
 
-    // Make executable (Unix only)
-    if (os.platform() !== 'win32') {
-      fs.chmodSync(destPath, 0o755);
+    // Download all binaries
+    for (const binary of BINARIES) {
+      await downloadBinary(binary, binDir, platform, arch, checksums);
     }
 
-    console.log(`✓ Successfully installed ${BINARY_NAME} to ${destPath}`);
     console.log('');
-    console.log('To install as a Claude Code skill, run:');
-    console.log(`  ${BINARY_NAME} install-skill`);
-  } catch (error) {
-    console.error(`Failed to install ${BINARY_NAME}:`, error.message);
-
-    // Clean up partial download
-    if (fs.existsSync(destPath)) {
-      fs.unlinkSync(destPath);
+    console.log(`✓ Successfully installed ${BINARIES.length} skills`);
+    console.log('');
+    console.log('To install as Claude Code skills, run:');
+    for (const binary of BINARIES) {
+      console.log(`  ${binary} install-skill`);
     }
-
+    console.log('');
+    console.log('Or install all at once:');
+    console.log(`  ${BINARIES.map(b => `${b} install-skill`).join(' && ')}`);
+  } catch (error) {
+    console.error('Failed to install portable-skills:', error.message);
     process.exit(1);
   }
 }

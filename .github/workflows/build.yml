@@ -32,11 +32,12 @@ jobs:
           fail_ci_if_error: false
 
   build:
-    name: Build (${{ matrix.goos }}-${{ matrix.goarch }})
+    name: Build ${{ matrix.skill }} (${{ matrix.goos }}-${{ matrix.goarch }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
+        skill: [ps-image, ps-hash, ps-qr, ps-archive, ps-audio]
         goos: [linux, darwin, windows]
         goarch: [amd64, arm64]
         exclude:
@@ -51,25 +52,25 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Build ps-image
+      - name: Build ${{ matrix.skill }}
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: '0'
         run: |
-          BINARY_NAME="ps-image-${{ matrix.goos }}-${{ matrix.goarch }}"
+          BINARY_NAME="${{ matrix.skill }}-${{ matrix.goos }}-${{ matrix.goarch }}"
           if [ "${{ matrix.goos }}" = "windows" ]; then
             BINARY_NAME="${BINARY_NAME}.exe"
           fi
           go build -ldflags="-s -w -X main.version=${{ github.sha }}" \
             -o "dist/${BINARY_NAME}" \
-            ./cmd/ps-image
+            ./cmd/${{ matrix.skill }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ps-image-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: dist/ps-image-*
+          name: ${{ matrix.skill }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/${{ matrix.skill }}-*
           retention-days: 7
 
   lint:
