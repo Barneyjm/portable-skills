@@ -1,8 +1,11 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/Barneyjm/portable-skills/pkg/image"
 	"github.com/Barneyjm/portable-skills/pkg/skill"
@@ -10,6 +13,9 @@ import (
 )
 
 var version = "dev"
+
+//go:embed SKILL.md
+var skillMD string
 
 func main() {
 	rootCmd := &cobra.Command{
@@ -22,6 +28,8 @@ func main() {
 	rootCmd.AddCommand(newResizeCmd())
 	rootCmd.AddCommand(newConvertCmd())
 	rootCmd.AddCommand(newInfoCmd())
+	rootCmd.AddCommand(newInstallSkillCmd())
+	rootCmd.AddCommand(newUninstallSkillCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
@@ -276,4 +284,190 @@ func newInfoCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Output as JSON")
 
 	return cmd
+}
+
+func newInstallSkillCmd() *cobra.Command {
+	var force bool
+
+	cmd := &cobra.Command{
+		Use:   "install-skill",
+		Short: "Install as a Claude Code skill",
+		Long: `Install ps-image as a Claude Code skill.
+
+This copies the binary and SKILL.md to ~/.claude/skills/image/
+so it can be invoked with /image in Claude Code.
+
+This is a "good skill citizen" - it only modifies ~/.claude/skills/image/
+and never touches other skills.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return installSkill(force)
+		},
+	}
+
+	cmd.Flags().BoolVarP(&force, "force", "f", false, "Overwrite existing installation without prompting")
+
+	return cmd
+}
+
+func newUninstallSkillCmd() *cobra.Command {
+	var force bool
+
+	cmd := &cobra.Command{
+		Use:   "uninstall-skill",
+		Short: "Uninstall from Claude Code skills",
+		Long: `Remove ps-image from Claude Code skills.
+
+This removes ~/.claude/skills/image/ and nothing else.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return uninstallSkill(force)
+		},
+	}
+
+	cmd.Flags().BoolVarP(&force, "force", "f", false, "Remove without prompting")
+
+	return cmd
+}
+
+func getSkillDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, ".claude", "skills", "image")
+}
+
+func installSkill(force bool) error {
+	skillDir := getSkillDir()
+	if skillDir == "" {
+		return fmt.Errorf("could not determine home directory")
+	}
+
+	// Check for existing installation
+	binaryDest := filepath.Join(skillDir, "ps-image")
+	skillMDDest := filepath.Join(skillDir, "SKILL.md")
+
+	if !force {
+		// Check if skill directory exists and has files
+		if _, err := os.Stat(skillDir); err == nil {
+			existing := []string{}
+			if _, err := os.Stat(binaryDest); err == nil {
+				existing = append(existing, "ps-image")
+			}
+			if _, err := os.Stat(skillMDDest); err == nil {
+				existing = append(existing, "SKILL.md")
+			}
+
+			if len(existing) > 0 {
+				fmt.Printf("Existing installation found at %s:\n", skillDir)
+				for _, f := range existing {
+					fmt.Printf("  - %s\n", f)
+				}
+				fmt.Print("\nOverwrite? [y/N] ")
+				var response string
+				if _, err := fmt.Scanln(&response); err != nil || (response != "y" && response != "Y" && response != "yes") {
+					fmt.Println("Installation cancelled.")
+					return nil
+				}
+			}
+		}
+	}
+
+	// Create skill directory
+	if err := os.MkdirAll(skillDir, 0755); err != nil {
+		return fmt.Errorf("failed to create skill directory: %w", err)
+	}
+
+	// Copy the current binary
+	execPath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to get executable path: %w", err)
+	}
+
+	// Resolve symlinks to get the real path
+	execPath, err = filepath.EvalSymlinks(execPath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve executable path: %w", err)
+	}
+
+	fmt.Println("Installing ps-image skill...")
+
+	// Copy binary
+	if err := copyFile(execPath, binaryDest); err != nil {
+		return fmt.Errorf("failed to copy binary: %w", err)
+	}
+	if err := os.Chmod(binaryDest, 0755); err != nil {
+		return fmt.Errorf("failed to set binary permissions: %w", err)
+	}
+	fmt.Printf("  ✓ Copied binary to %s\n", binaryDest)
+
+	// Write embedded SKILL.md
+	if err := os.WriteFile(skillMDDest, []byte(skillMD), 0644); err != nil {
+		return fmt.Errorf("failed to write SKILL.md: %w", err)
+	}
+	fmt.Printf("  ✓ Wrote SKILL.md to %s\n", skillMDDest)
+
+	fmt.Println("\n✓ Installation complete!")
+	fmt.Println("\nYou can now use /image in Claude Code.")
+
+	return nil
+}
+
+func uninstallSkill(force bool) error {
+	skillDir := getSkillDir()
+	if skillDir == "" {
+		return fmt.Errorf("could not determine home directory")
+	}
+
+	// Check if directory exists
+	if _, err := os.Stat(skillDir); os.IsNotExist(err) {
+		fmt.Printf("Skill directory does not exist: %s\n", skillDir)
+		fmt.Println("Nothing to uninstall.")
+		return nil
+	}
+
+	// List contents
+	entries, err := os.ReadDir(skillDir)
+	if err != nil {
+		return fmt.Errorf("failed to read skill directory: %w", err)
+	}
+
+	if !force {
+		fmt.Printf("Will remove: %s\n\n", skillDir)
+		fmt.Println("Contents:")
+		for _, entry := range entries {
+			fmt.Printf("  - %s\n", entry.Name())
+		}
+		fmt.Print("\nRemove this skill? [y/N] ")
+		var response string
+		if _, err := fmt.Scanln(&response); err != nil || (response != "y" && response != "Y" && response != "yes") {
+			fmt.Println("Uninstall cancelled.")
+			return nil
+		}
+	}
+
+	// Remove the directory
+	if err := os.RemoveAll(skillDir); err != nil {
+		return fmt.Errorf("failed to remove skill directory: %w", err)
+	}
+
+	fmt.Println("\n✓ Skill uninstalled.")
+
+	return nil
+}
+
+func copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = sourceFile.Close() }()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = destFile.Close() }()
+
+	_, err = io.Copy(destFile, sourceFile)
+	return err
 }

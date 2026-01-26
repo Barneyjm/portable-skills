@@ -1,1 +1,8 @@
-ps-image
+# Built binaries (in root directory)
+/ps-image
+/ps-hash
+/ps-qr
+/ps-archive
+/ps-audio
+/ps-pdf
+/ps-pptx

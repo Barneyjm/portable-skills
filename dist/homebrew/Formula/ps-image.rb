@@ -11,17 +11,9 @@ class PsImage < Formula
     if Hardware::CPU.arm?
       url "https://github.com/Barneyjm/portable-skills/releases/download/v#{version}/ps-image-darwin-arm64"
       sha256 "PLACEHOLDER_SHA256_DARWIN_ARM64"
-
-      def install
-        bin.install "ps-image-darwin-arm64" => "ps-image"
-      end
     else
       url "https://github.com/Barneyjm/portable-skills/releases/download/v#{version}/ps-image-darwin-amd64"
       sha256 "PLACEHOLDER_SHA256_DARWIN_AMD64"
-
-      def install
-        bin.install "ps-image-darwin-amd64" => "ps-image"
-      end
     end
   end
 
@@ -29,18 +21,15 @@ class PsImage < Formula
     if Hardware::CPU.arm?
       url "https://github.com/Barneyjm/portable-skills/releases/download/v#{version}/ps-image-linux-arm64"
       sha256 "PLACEHOLDER_SHA256_LINUX_ARM64"
-
-      def install
-        bin.install "ps-image-linux-arm64" => "ps-image"
-      end
     else
       url "https://github.com/Barneyjm/portable-skills/releases/download/v#{version}/ps-image-linux-amd64"
       sha256 "PLACEHOLDER_SHA256_LINUX_AMD64"
-
-      def install
-        bin.install "ps-image-linux-amd64" => "ps-image"
-      end
     end
+  end
+
+  def install
+    binary_name = Dir["ps-image-*"].first
+    bin.install binary_name => "ps-image"
   end
 
   def caveats
@@ -51,6 +40,9 @@ class PsImage < Formula
         ps-image resize <input> --width 800
         ps-image convert <input> --format png
         ps-image info <input> --json
+
+      To install as a Claude Code skill:
+        ps-image install-skill
 
       For more information:
         ps-image --help
