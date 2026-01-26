@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        skill: [ps-image, ps-hash, ps-qr, ps-archive, ps-audio, ps-pdf]
+        skill: [ps-image, ps-hash, ps-qr, ps-archive, ps-audio, ps-pdf, ps-pptx]
         goos: [linux, darwin, windows]
         goarch: [amd64, arm64]
         exclude:

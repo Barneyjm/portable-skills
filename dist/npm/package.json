@@ -12,6 +12,8 @@
     "archive",
     "audio",
     "pdf",
+    "pptx",
+    "powerpoint",
     "cli",
     "portable"
   ],
@@ -31,7 +33,8 @@
     "ps-qr": "./bin/ps-qr",
     "ps-archive": "./bin/ps-archive",
     "ps-audio": "./bin/ps-audio",
-    "ps-pdf": "./bin/ps-pdf"
+    "ps-pdf": "./bin/ps-pdf",
+    "ps-pptx": "./bin/ps-pptx"
   },
   "scripts": {
     "postinstall": "node scripts/download-binary.js"
@@ -55,6 +58,6 @@
     "arm64"
   ],
   "portableSkills": {
-    "binaries": ["ps-image", "ps-hash", "ps-qr", "ps-archive", "ps-audio", "ps-pdf"]
+    "binaries": ["ps-image", "ps-hash", "ps-qr", "ps-archive", "ps-audio", "ps-pdf", "ps-pptx"]
   }
 }

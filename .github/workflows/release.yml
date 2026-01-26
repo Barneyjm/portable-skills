@@ -11,7 +11,7 @@ permissions:
   packages: write
 
 env:
-  SKILLS: "ps-image ps-hash ps-qr ps-archive ps-audio ps-pdf"
+  SKILLS: "ps-image ps-hash ps-qr ps-archive ps-audio ps-pdf ps-pptx"
 
 jobs:
   release:
@@ -102,6 +102,7 @@ jobs:
           cp skills/archive/SKILL.md dist/SKILL-archive.md
           cp skills/audio/SKILL.md dist/SKILL-audio.md
           cp skills/pdf/SKILL.md dist/SKILL-pdf.md
+          cp skills/pptx/SKILL.md dist/SKILL-pptx.md
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
