@@ -243,8 +243,7 @@ func installSkill(force bool) error {
 				}
 				fmt.Print("\nOverwrite? [y/N] ")
 				var response string
-				_, _ = fmt.Scanln(&response)
-				if response != "y" && response != "Y" && response != "yes" {
+				if _, err := fmt.Scanln(&response); err != nil || (response != "y" && response != "Y" && response != "yes") {
 					fmt.Println("Installation cancelled.")
 					return nil
 				}
@@ -311,8 +310,7 @@ func uninstallSkill(force bool) error {
 		}
 		fmt.Print("\nRemove this skill? [y/N] ")
 		var response string
-		_, _ = fmt.Scanln(&response)
-		if response != "y" && response != "Y" && response != "yes" {
+		if _, err := fmt.Scanln(&response); err != nil || (response != "y" && response != "Y" && response != "yes") {
 			fmt.Println("Uninstall cancelled.")
 			return nil
 		}
