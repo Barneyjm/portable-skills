@@ -33,7 +33,7 @@ npm install sharp  # might work, might not
 ### Homebrew (macOS/Linux)
 
 ```bash
-brew install Barneyjm/tap/ps-image
+brew install Barneyjm/tap/portable-skills
 ```
 
 ### Direct Download
@@ -68,51 +68,175 @@ ps-image resize input.png --width 800
 
 ## Available Skills
 
+| Skill | Description | Commands |
+|-------|-------------|----------|
+| [ps-image](#ps-image) | Image processing | resize, convert, info |
+| [ps-pptx](#ps-pptx) | PowerPoint files | create, text, info, list, themes |
+| [ps-pdf](#ps-pdf) | PDF files | create, text, info |
+| [ps-qr](#ps-qr) | QR code generation | generate |
+| [ps-archive](#ps-archive) | Zip archives | zip, unzip, list |
+| [ps-hash](#ps-hash) | File checksums | calc, verify |
+| [ps-audio](#ps-audio) | Audio metadata | info, art |
+
+---
+
 ### ps-image
 
 Image processing without dependencies - resize, convert formats, extract metadata.
 
-#### Commands
-
-**resize** - Resize an image
 ```bash
+# Resize
 ps-image resize photo.jpg --width 800
 ps-image resize photo.jpg --width 800 --height 600 --fit cover
-ps-image resize photo.jpg -w 400 -o thumbnail.jpg
-```
 
-**convert** - Convert between formats
-```bash
-ps-image convert image.png --format jpg
-ps-image convert image.bmp --format png --output result.png
-```
+# Convert
+ps-image convert image.png --format jpg --quality 90
 
-**info** - Extract metadata
-```bash
-ps-image info photo.jpg
+# Info
 ps-image info photo.jpg --json
 ```
 
-#### Supported Formats
+**Supported Formats:** PNG, JPEG, GIF, BMP, TIFF, WebP (read only)
 
-| Format | Read | Write |
-|--------|------|-------|
-| PNG    | ✓    | ✓     |
-| JPEG   | ✓    | ✓     |
-| GIF    | ✓    | ✓     |
-| BMP    | ✓    | ✓     |
-| TIFF   | ✓    | ✓     |
-| WebP   | ✓    | ✗     |
+---
 
-#### Stdin/Stdout Support
+### ps-pptx
+
+Read and create PowerPoint presentations with themes, backgrounds, images, shapes, and full positioning control.
 
 ```bash
-# Pipe from curl
-curl -s https://example.com/image.png | ps-image resize - --width 400 -o - > thumbnail.png
+# Extract text
+ps-pptx text presentation.pptx
 
-# Chain commands
-cat large.png | ps-image resize - --width 800 -o - | ps-image convert - --format jpg -o - > result.jpg
+# Create simple presentation
+ps-pptx create notes.txt -o deck.pptx
+
+# Create with theme and background
+ps-pptx create notes.txt -o deck.pptx --theme teal --background 023047
+
+# Add images to slides
+ps-pptx create notes.txt -o deck.pptx --image slide:5,path:qr.png,x:6.5,y:1,w:3,h:3
+
+# Full control with JSON input
+ps-pptx create presentation.json -o deck.pptx --json
+
+# List available themes
+ps-pptx themes
 ```
+
+**Themes:** default, dark, light, teal, coral
+
+**JSON Input** for full control over positioning, styling, and elements:
+```json
+{
+  "options": {"title": "My Deck", "theme": "teal"},
+  "slides": [
+    {"title": "Welcome", "background": {"color": "023047"}},
+    {
+      "elements": [
+        {"type": "text", "text": {"content": "Hello", "position": {"x": 1, "y": 2, "width": 8, "height": 1}, "style": {"fontSize": 48, "bold": true}}},
+        {"type": "image", "image": {"path": "qr.png", "position": {"x": 6.5, "y": 1, "width": 3, "height": 3}}},
+        {"type": "shape", "shape": {"type": "rectangle", "position": {"x": 0.5, "y": 0.5, "width": 9, "height": 0.1}, "fillColor": "FFB703"}}
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### ps-pdf
+
+Extract text from PDFs and create PDFs from text.
+
+```bash
+# Extract text
+ps-pdf text document.pdf
+ps-pdf text document.pdf --page 3
+
+# Get info
+ps-pdf info document.pdf --json
+
+# Create PDF from text
+ps-pdf create notes.txt -o notes.pdf --title "My Notes"
+echo "Hello World" | ps-pdf create - -o hello.pdf
+```
+
+---
+
+### ps-qr
+
+Generate QR codes from text, URLs, or data.
+
+```bash
+# Generate QR code
+ps-qr generate "https://example.com" -o qrcode.png
+
+# Larger size with high error correction
+ps-qr generate "Hello World" -o hello.png --size 512 --level H
+
+# ASCII art in terminal
+ps-qr generate "https://example.com" --ascii
+
+# WiFi QR code
+ps-qr generate "WIFI:T:WPA;S:MyNetwork;P:MyPassword;;" -o wifi.png
+```
+
+---
+
+### ps-archive
+
+Create and extract zip archives.
+
+```bash
+# Create zip
+ps-archive zip document.pdf
+ps-archive zip photos/ -o vacation-photos.zip
+
+# Extract
+ps-archive unzip backup.zip -o ~/restored/
+
+# List contents
+ps-archive list backup.zip --json
+```
+
+---
+
+### ps-hash
+
+Calculate and verify file checksums.
+
+```bash
+# Calculate SHA256 (default)
+ps-hash calc document.pdf
+
+# Calculate MD5
+ps-hash calc file.zip -a md5
+
+# Verify hash
+ps-hash verify download.iso abc123def456...
+```
+
+**Algorithms:** md5, sha1, sha256 (default), sha512
+
+---
+
+### ps-audio
+
+Read metadata from audio files and extract album art.
+
+```bash
+# Show metadata
+ps-audio info song.mp3
+ps-audio info album/*.flac --json
+
+# Extract album art
+ps-audio art song.mp3 -o cover.jpg
+```
+
+**Formats:** MP3, M4A, FLAC, OGG, WAV, AIFF
+
+---
 
 ## Security
 
@@ -179,11 +303,19 @@ Each skill includes a `SKILL.md` file that agents can read to understand capabil
 ```bash
 # Location of skill manifests
 skills/
+├── archive/
+│   └── SKILL.md
+├── audio/
+│   └── SKILL.md
+├── hash/
+│   └── SKILL.md
 ├── image/
-│   └── SKILL.md    # Agent-readable skill definition
+│   └── SKILL.md
 ├── pdf/
 │   └── SKILL.md
-└── office/
+├── pptx/
+│   └── SKILL.md
+└── qr/
     └── SKILL.md
 ```
 
@@ -193,16 +325,16 @@ The SKILL.md files follow a consistent format with YAML frontmatter and markdown
 
 ### Prerequisites
 
-- Go 1.22+
+- Go 1.24+
 
 ### Building
 
 ```bash
-# Build for current platform
-go build -o ps-image ./cmd/ps-image
+# Build all skills for current platform
+go build ./cmd/...
 
-# Build for all platforms
-./scripts/build-all.sh
+# Build a specific skill
+go build -o ps-pptx ./cmd/ps-pptx
 
 # Run tests
 go test -v ./...
@@ -213,13 +345,23 @@ go test -v ./...
 ```
 portable-skills/
 ├── cmd/
-│   └── ps-image/           # CLI entry point
+│   ├── ps-archive/         # Archive skill CLI
+│   ├── ps-audio/           # Audio skill CLI
+│   ├── ps-hash/            # Hash skill CLI
+│   ├── ps-image/           # Image skill CLI
+│   ├── ps-pdf/             # PDF skill CLI
+│   ├── ps-pptx/            # PowerPoint skill CLI
+│   └── ps-qr/              # QR code skill CLI
 ├── pkg/
-│   ├── image/              # Core image processing library
+│   ├── archive/            # Archive processing library
+│   ├── audio/              # Audio metadata library
+│   ├── hash/               # Hashing library
+│   ├── image/              # Image processing library
+│   ├── pdf/                # PDF processing library
+│   ├── pptx/               # PowerPoint processing library
+│   ├── qr/                 # QR code library
 │   └── skill/              # Skill protocol helpers
-├── skills/
-│   └── image/
-│       └── SKILL.md        # Agent-readable skill definition
+├── skills/                 # SKILL.md files for each skill
 ├── dist/
 │   ├── homebrew/           # Homebrew formula
 │   └── npm/                # npm wrapper package
