@@ -282,6 +282,9 @@ Examples:
 			for _, field := range result.Updated {
 				fmt.Printf("  - %s\n", field)
 			}
+			for _, warning := range result.Warnings {
+				fmt.Fprintf(os.Stderr, "Warning: %s\n", warning)
+			}
 			return nil
 		},
 	}

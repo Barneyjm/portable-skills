@@ -193,10 +193,11 @@ type TagUpdate struct {
 
 // WriteResult contains the result of a tag write operation.
 type WriteResult struct {
-	Path    string   `json:"path"`
-	Success bool     `json:"success"`
-	Updated []string `json:"updated,omitempty"`
-	Error   string   `json:"error,omitempty"`
+	Path     string   `json:"path"`
+	Success  bool     `json:"success"`
+	Updated  []string `json:"updated,omitempty"`
+	Warnings []string `json:"warnings,omitempty"`
+	Error    string   `json:"error,omitempty"`
 }
 
 // WriteTags updates tags on an audio file.
@@ -283,39 +284,29 @@ func writeMP3Tags(path string, updates TagUpdate) (*WriteResult, error) {
 	}
 
 	// Handle track number
-	if updates.Track != nil || updates.TrackTotal != nil {
-		trackStr := ""
-		if updates.Track != nil {
-			trackStr = strconv.Itoa(*updates.Track)
-		}
+	// Only write track total if track number is also being set to prevent data corruption
+	if updates.Track != nil {
+		trackStr := strconv.Itoa(*updates.Track)
 		if updates.TrackTotal != nil {
-			if trackStr == "" {
-				trackStr = "0"
-			}
 			trackStr = fmt.Sprintf("%s/%d", trackStr, *updates.TrackTotal)
 		}
-		if trackStr != "" {
-			t.AddTextFrame(t.CommonID("Track"), t.DefaultEncoding(), trackStr)
-			result.Updated = append(result.Updated, "track")
-		}
+		t.AddTextFrame(t.CommonID("Track"), t.DefaultEncoding(), trackStr)
+		result.Updated = append(result.Updated, "track")
+	} else if updates.TrackTotal != nil {
+		result.Warnings = append(result.Warnings, "track-total ignored: must specify --track with --track-total to prevent overwriting existing track number")
 	}
 
 	// Handle disc number
-	if updates.Disc != nil || updates.DiscTotal != nil {
-		discStr := ""
-		if updates.Disc != nil {
-			discStr = strconv.Itoa(*updates.Disc)
-		}
+	// Only write disc total if disc number is also being set to prevent data corruption
+	if updates.Disc != nil {
+		discStr := strconv.Itoa(*updates.Disc)
 		if updates.DiscTotal != nil {
-			if discStr == "" {
-				discStr = "0"
-			}
 			discStr = fmt.Sprintf("%s/%d", discStr, *updates.DiscTotal)
 		}
-		if discStr != "" {
-			t.AddTextFrame(t.CommonID("TPOS"), t.DefaultEncoding(), discStr)
-			result.Updated = append(result.Updated, "disc")
-		}
+		t.AddTextFrame(t.CommonID("TPOS"), t.DefaultEncoding(), discStr)
+		result.Updated = append(result.Updated, "disc")
+	} else if updates.DiscTotal != nil {
+		result.Warnings = append(result.Warnings, "disc-total ignored: must specify --disc with --disc-total to prevent overwriting existing disc number")
 	}
 
 	// Handle album art

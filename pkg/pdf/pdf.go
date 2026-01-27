@@ -111,10 +111,10 @@ type EnhancedCreateOptions struct {
 	Orientation  string   `json:"orientation,omitempty"`  // P (portrait), L (landscape)
 	FontFamily   string   `json:"fontFamily,omitempty"`   // Helvetica, Times, Courier
 	FontSize     float64  `json:"fontSize,omitempty"`     // Base font size in points
-	MarginTop    float64  `json:"marginTop,omitempty"`    // Top margin in mm
-	MarginBottom float64  `json:"marginBottom,omitempty"` // Bottom margin in mm
-	MarginLeft   float64  `json:"marginLeft,omitempty"`   // Left margin in mm
-	MarginRight  float64  `json:"marginRight,omitempty"`  // Right margin in mm
+	MarginTop    *float64 `json:"marginTop,omitempty"`    // Top margin in mm (nil = use default)
+	MarginBottom *float64 `json:"marginBottom,omitempty"` // Bottom margin in mm (nil = use default)
+	MarginLeft   *float64 `json:"marginLeft,omitempty"`   // Left margin in mm (nil = use default)
+	MarginRight  *float64 `json:"marginRight,omitempty"`  // Right margin in mm (nil = use default)
 	Columns      int      `json:"columns,omitempty"`      // Number of columns (1-3)
 	ColumnGap    float64  `json:"columnGap,omitempty"`    // Gap between columns in mm
 	PageNumbers  bool     `json:"pageNumbers,omitempty"`  // Add page numbers
@@ -242,15 +242,19 @@ func CreateFromFile(outputPath string, inputPath string, opts CreateOptions) err
 
 // DefaultEnhancedOptions returns sensible defaults for enhanced PDF creation.
 func DefaultEnhancedOptions() EnhancedCreateOptions {
+	marginTop := 20.0
+	marginBottom := 20.0
+	marginLeft := 20.0
+	marginRight := 20.0
 	return EnhancedCreateOptions{
 		PageSize:     "A4",
 		Orientation:  "P",
 		FontFamily:   "Helvetica",
 		FontSize:     12,
-		MarginTop:    20,
-		MarginBottom: 20,
-		MarginLeft:   20,
-		MarginRight:  20,
+		MarginTop:    &marginTop,
+		MarginBottom: &marginBottom,
+		MarginLeft:   &marginLeft,
+		MarginRight:  &marginRight,
 		Columns:      1,
 		ColumnGap:    10,
 		LineSpacing:  1.2,
@@ -274,16 +278,16 @@ func CreateEnhanced(outputPath string, paragraphs []Paragraph, opts EnhancedCrea
 	if opts.FontSize == 0 {
 		opts.FontSize = defaults.FontSize
 	}
-	if opts.MarginTop == 0 {
+	if opts.MarginTop == nil {
 		opts.MarginTop = defaults.MarginTop
 	}
-	if opts.MarginBottom == 0 {
+	if opts.MarginBottom == nil {
 		opts.MarginBottom = defaults.MarginBottom
 	}
-	if opts.MarginLeft == 0 {
+	if opts.MarginLeft == nil {
 		opts.MarginLeft = defaults.MarginLeft
 	}
-	if opts.MarginRight == 0 {
+	if opts.MarginRight == nil {
 		opts.MarginRight = defaults.MarginRight
 	}
 	if opts.LineSpacing == 0 {
@@ -313,12 +317,12 @@ func CreateEnhanced(outputPath string, paragraphs []Paragraph, opts EnhancedCrea
 	}
 
 	// Set margins
-	p.SetMargins(opts.MarginLeft, opts.MarginTop, opts.MarginRight)
-	p.SetAutoPageBreak(true, opts.MarginBottom)
+	p.SetMargins(*opts.MarginLeft, *opts.MarginTop, *opts.MarginRight)
+	p.SetAutoPageBreak(true, *opts.MarginBottom)
 
 	// Calculate column width
 	pageWidth, _ := p.GetPageSize()
-	contentWidth := pageWidth - opts.MarginLeft - opts.MarginRight
+	contentWidth := pageWidth - *opts.MarginLeft - *opts.MarginRight
 	columnWidth := contentWidth
 	if opts.Columns > 1 {
 		columnWidth = (contentWidth - float64(opts.Columns-1)*opts.ColumnGap) / float64(opts.Columns)
@@ -388,7 +392,9 @@ func CreateEnhanced(outputPath string, paragraphs []Paragraph, opts EnhancedCrea
 		case "hr":
 			renderHorizontalRule(p, opts)
 		default: // "text" or empty
-			renderParagraph(p, para, opts)
+			if err := renderParagraph(p, para, opts); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -421,7 +427,7 @@ func renderHeading(p *fpdf.Fpdf, para Paragraph, opts EnhancedCreateOptions) {
 }
 
 // renderParagraph renders a text paragraph with optional styling.
-func renderParagraph(p *fpdf.Fpdf, para Paragraph, opts EnhancedCreateOptions) {
+func renderParagraph(p *fpdf.Fpdf, para Paragraph, opts EnhancedCreateOptions) error {
 	fontSize := opts.FontSize
 	if para.Style.FontSize > 0 {
 		fontSize = para.Style.FontSize
@@ -443,13 +449,16 @@ func renderParagraph(p *fpdf.Fpdf, para Paragraph, opts EnhancedCreateOptions) {
 
 	// Set color if specified
 	if para.Style.Color != "" {
-		r, g, b := hexToRGB(para.Style.Color)
+		r, g, b, err := hexToRGB(para.Style.Color)
+		if err != nil {
+			return fmt.Errorf("invalid color in paragraph: %w", err)
+		}
 		p.SetTextColor(r, g, b)
 	}
 
 	// Handle indentation
 	if para.Indent > 0 {
-		p.SetX(opts.MarginLeft + para.Indent)
+		p.SetX(*opts.MarginLeft + para.Indent)
 	}
 
 	align := getAlignment(para.Alignment)
@@ -460,6 +469,7 @@ func renderParagraph(p *fpdf.Fpdf, para Paragraph, opts EnhancedCreateOptions) {
 	// Reset color and font
 	p.SetTextColor(0, 0, 0)
 	p.SetFont(opts.FontFamily, "", opts.FontSize)
+	return nil
 }
 
 // renderList renders a bullet or numbered list.
@@ -511,7 +521,7 @@ func renderHorizontalRule(p *fpdf.Fpdf, opts EnhancedCreateOptions) {
 	p.Ln(5)
 	pageWidth, _ := p.GetPageSize()
 	y := p.GetY()
-	p.Line(opts.MarginLeft, y, pageWidth-opts.MarginRight, y)
+	p.Line(*opts.MarginLeft, y, pageWidth-*opts.MarginRight, y)
 	p.Ln(5)
 }
 
@@ -530,15 +540,18 @@ func getAlignment(align string) string {
 }
 
 // hexToRGB converts a hex color string to RGB values.
-func hexToRGB(hex string) (int, int, int) {
+func hexToRGB(hex string) (int, int, int, error) {
 	hex = strings.TrimPrefix(hex, "#")
 	if len(hex) != 6 {
-		return 0, 0, 0
+		return 0, 0, 0, fmt.Errorf("invalid hex color length: expected 6 characters, got %d", len(hex))
 	}
 
 	var r, g, b int
-	_, _ = fmt.Sscanf(hex, "%02x%02x%02x", &r, &g, &b)
-	return r, g, b
+	n, err := fmt.Sscanf(hex, "%02x%02x%02x", &r, &g, &b)
+	if err != nil || n != 3 {
+		return 0, 0, 0, fmt.Errorf("invalid hex color format: %s", hex)
+	}
+	return r, g, b, nil
 }
 
 // CreateFromJSON creates a PDF from JSON input.

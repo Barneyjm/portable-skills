@@ -217,19 +217,29 @@ Or with explicit paragraphs:
 
 			// Build enhanced options
 			opts := pdf.EnhancedCreateOptions{
-				Title:        title,
-				Author:       author,
-				PageSize:     pageSize,
-				Orientation:  orientation,
-				FontFamily:   font,
-				FontSize:     fontSize,
-				MarginTop:    marginTop,
-				MarginBottom: marginBottom,
-				MarginLeft:   marginLeft,
-				MarginRight:  marginRight,
-				PageNumbers:  pageNumbers,
-				PageNumPos:   pageNumPos,
-				LineSpacing:  lineSpacing,
+				Title:       title,
+				Author:      author,
+				PageSize:    pageSize,
+				Orientation: orientation,
+				FontFamily:  font,
+				FontSize:    fontSize,
+				PageNumbers: pageNumbers,
+				PageNumPos:  pageNumPos,
+				LineSpacing: lineSpacing,
+			}
+
+			// Only set margins if explicitly provided via flags
+			if cmd.Flags().Changed("margin-top") {
+				opts.MarginTop = &marginTop
+			}
+			if cmd.Flags().Changed("margin-bottom") {
+				opts.MarginBottom = &marginBottom
+			}
+			if cmd.Flags().Changed("margin-left") {
+				opts.MarginLeft = &marginLeft
+			}
+			if cmd.Flags().Changed("margin-right") {
+				opts.MarginRight = &marginRight
 			}
 
 			// Markdown input mode
@@ -260,6 +270,7 @@ Or with explicit paragraphs:
 	cmd.Flags().StringVar(&font, "font", "Helvetica", "Font family: Helvetica, Times, Courier")
 	cmd.Flags().BoolVar(&jsonInput, "json", false, "Parse input as JSON for full control")
 	cmd.Flags().BoolVar(&markdown, "markdown", false, "Parse input as Markdown")
+	cmd.MarkFlagsMutuallyExclusive("json", "markdown")
 	cmd.Flags().Float64Var(&marginTop, "margin-top", 20, "Top margin in mm")
 	cmd.Flags().Float64Var(&marginBottom, "margin-bottom", 20, "Bottom margin in mm")
 	cmd.Flags().Float64Var(&marginLeft, "margin-left", 20, "Left margin in mm")
