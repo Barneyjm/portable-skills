@@ -40,6 +40,9 @@ All pure Go (no CGO):
 - `github.com/rwcarlsen/goexif` - EXIF extraction
 - `github.com/spf13/cobra` - CLI framework
 - `golang.org/x/image` - Additional format support (webp, bmp, tiff)
+- `github.com/bogem/id3v2/v2` - MP3 ID3v2 tag reading/writing
+- `github.com/dhowden/tag` - Audio metadata reading (multi-format)
+- `github.com/abema/go-mp4` - MP4/MOV video container parsing
 
 ## Getting Started
 
@@ -112,7 +115,7 @@ This ensures users and agents can discover and use new features correctly.
 ## Future Work
 
 - `ps-office` - Read/write docx, xlsx
-- `ps-video` - Metadata, thumbnail generation
+- `ps-video` - Thumbnail generation (requires external codec)
 - Extend write support for FLAC, M4A in ps-audio
 
 ## Common Tasks

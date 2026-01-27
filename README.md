@@ -77,6 +77,7 @@ ps-image resize input.png --width 800
 | [ps-archive](#ps-archive) | Zip archives | zip, unzip, list |
 | [ps-hash](#ps-hash) | File checksums | calc, verify |
 | [ps-audio](#ps-audio) | Audio metadata | info, set, art, clear |
+| [ps-video](#ps-video) | Video metadata | info, formats |
 
 ---
 
@@ -284,6 +285,40 @@ ps-audio clear song.mp3 --art     # Just album art
 
 ---
 
+### ps-video
+
+Read video metadata including duration, resolution, codecs, frame rate, and more.
+
+```bash
+# Show metadata
+ps-video info video.mp4
+ps-video info *.mp4 --json
+
+# Detailed track information
+ps-video info movie.mp4 --detailed
+
+# List supported formats
+ps-video formats
+```
+
+**Output:**
+```
+File: video.mp4
+Format: MP4
+Duration: 2:30.500 (150.50 seconds)
+Resolution: 1920x1080
+Video Codec: H.264/AVC
+Frame Rate: 29.97 fps
+Audio Codec: AAC
+Audio Channels: stereo
+Bitrate: 5432 kbps
+Size: 98.45 MB
+```
+
+**Supported Formats:** MP4, M4V, MOV, 3GP
+
+---
+
 ## Security
 
 We take security seriously. All releases include:
@@ -361,7 +396,9 @@ skills/
 │   └── SKILL.md
 ├── pptx/
 │   └── SKILL.md
-└── qr/
+├── qr/
+│   └── SKILL.md
+└── video/
     └── SKILL.md
 ```
 
@@ -397,7 +434,8 @@ portable-skills/
 │   ├── ps-image/           # Image skill CLI
 │   ├── ps-pdf/             # PDF skill CLI
 │   ├── ps-pptx/            # PowerPoint skill CLI
-│   └── ps-qr/              # QR code skill CLI
+│   ├── ps-qr/              # QR code skill CLI
+│   └── ps-video/           # Video skill CLI
 ├── pkg/
 │   ├── archive/            # Archive processing library
 │   ├── audio/              # Audio metadata library
@@ -406,7 +444,8 @@ portable-skills/
 │   ├── pdf/                # PDF processing library
 │   ├── pptx/               # PowerPoint processing library
 │   ├── qr/                 # QR code library
-│   └── skill/              # Skill protocol helpers
+│   ├── skill/              # Skill protocol helpers
+│   └── video/              # Video metadata library
 ├── skills/                 # SKILL.md files for each skill
 ├── dist/
 │   ├── homebrew/           # Homebrew formula
