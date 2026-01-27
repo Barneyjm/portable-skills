@@ -5,6 +5,7 @@ go 1.24.1
 toolchain go1.24.7
 
 require (
+	github.com/bogem/id3v2/v2 v2.1.4
 	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-pdf/fpdf v0.9.0
@@ -18,4 +19,5 @@ require (
 require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
+	golang.org/x/text v0.33.0 // indirect
 )

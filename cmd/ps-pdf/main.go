@@ -126,19 +126,67 @@ func newTextCmd() *cobra.Command {
 
 func newCreateCmd() *cobra.Command {
 	var (
-		output   string
-		title    string
-		author   string
-		pageSize string
-		fontSize float64
-		font     string
+		output       string
+		title        string
+		author       string
+		pageSize     string
+		fontSize     float64
+		font         string
+		jsonInput    bool
+		markdown     bool
+		marginTop    float64
+		marginBottom float64
+		marginLeft   float64
+		marginRight  float64
+		pageNumbers  bool
+		pageNumPos   string
+		lineSpacing  float64
+		orientation  string
 	)
 
 	cmd := &cobra.Command{
 		Use:   "create <input>",
-		Short: "Create a PDF from text input",
-		Long:  "Create a PDF from a text file or stdin. Use - for stdin.",
-		Args:  cobra.ExactArgs(1),
+		Short: "Create a PDF from text, Markdown, or JSON input",
+		Long: `Create a PDF from a text file, Markdown file, JSON file, or stdin. Use - for stdin.
+
+TEXT INPUT (default):
+Plain text is rendered as a single block with automatic line wrapping.
+
+MARKDOWN INPUT (--markdown):
+Parses Markdown syntax including:
+  - Headings (# H1, ## H2, ... ###### H6)
+  - Lists (bullet and numbered)
+  - Code blocks (triple backticks)
+  - Horizontal rules (---, ***, ___)
+  - Paragraphs separated by blank lines
+
+JSON INPUT (--json):
+Accepts structured JSON for full control over document layout.
+
+Example JSON:
+{
+  "options": {
+    "title": "My Document",
+    "author": "Jane Doe",
+    "pageNumbers": true,
+    "marginTop": 25,
+    "marginBottom": 25
+  },
+  "markdown": "# Hello World\n\nThis is a paragraph.\n\n- Item 1\n- Item 2"
+}
+
+Or with explicit paragraphs:
+{
+  "options": { "title": "Report", "pageNumbers": true },
+  "paragraphs": [
+    { "type": "heading", "level": 1, "content": "Introduction" },
+    { "type": "text", "content": "This is the intro paragraph." },
+    { "type": "list", "items": ["First item", "Second item"], "ordered": false },
+    { "type": "code", "content": "function hello() {\n  return 'world';\n}" },
+    { "type": "hr" }
+  ]
+}`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			input := args[0]
 
@@ -146,22 +194,55 @@ func newCreateCmd() *cobra.Command {
 				return fmt.Errorf("--output is required")
 			}
 
-			opts := pdf.CreateOptions{
-				Title:      title,
-				Author:     author,
-				PageSize:   pageSize,
-				FontSize:   fontSize,
-				FontFamily: font,
-			}
-
+			// Read input content
+			var content []byte
 			var err error
 			if input == "-" {
-				err = pdf.CreateFromReader(output, os.Stdin, opts)
+				content, err = io.ReadAll(os.Stdin)
 			} else {
-				err = pdf.CreateFromFile(output, input, opts)
+				content, err = os.ReadFile(input)
+			}
+			if err != nil {
+				return fmt.Errorf("failed to read input: %w", err)
 			}
 
-			if err != nil {
+			// JSON input mode
+			if jsonInput {
+				if err := pdf.CreateFromJSON(output, content); err != nil {
+					return err
+				}
+				fmt.Printf("Created %s\n", output)
+				return nil
+			}
+
+			// Build enhanced options
+			opts := pdf.EnhancedCreateOptions{
+				Title:        title,
+				Author:       author,
+				PageSize:     pageSize,
+				Orientation:  orientation,
+				FontFamily:   font,
+				FontSize:     fontSize,
+				MarginTop:    marginTop,
+				MarginBottom: marginBottom,
+				MarginLeft:   marginLeft,
+				MarginRight:  marginRight,
+				PageNumbers:  pageNumbers,
+				PageNumPos:   pageNumPos,
+				LineSpacing:  lineSpacing,
+			}
+
+			// Markdown input mode
+			if markdown {
+				if err := pdf.CreateFromMarkdown(output, string(content), opts); err != nil {
+					return err
+				}
+				fmt.Printf("Created %s\n", output)
+				return nil
+			}
+
+			// Plain text mode (enhanced)
+			if err := pdf.CreateEnhancedFromText(output, string(content), opts); err != nil {
 				return err
 			}
 
@@ -174,8 +255,18 @@ func newCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&title, "title", "", "Document title")
 	cmd.Flags().StringVar(&author, "author", "", "Document author")
 	cmd.Flags().StringVar(&pageSize, "page-size", "A4", "Page size: A4, Letter, Legal")
+	cmd.Flags().StringVar(&orientation, "orientation", "P", "Orientation: P (portrait), L (landscape)")
 	cmd.Flags().Float64Var(&fontSize, "font-size", 12, "Font size in points")
 	cmd.Flags().StringVar(&font, "font", "Helvetica", "Font family: Helvetica, Times, Courier")
+	cmd.Flags().BoolVar(&jsonInput, "json", false, "Parse input as JSON for full control")
+	cmd.Flags().BoolVar(&markdown, "markdown", false, "Parse input as Markdown")
+	cmd.Flags().Float64Var(&marginTop, "margin-top", 20, "Top margin in mm")
+	cmd.Flags().Float64Var(&marginBottom, "margin-bottom", 20, "Bottom margin in mm")
+	cmd.Flags().Float64Var(&marginLeft, "margin-left", 20, "Left margin in mm")
+	cmd.Flags().Float64Var(&marginRight, "margin-right", 20, "Right margin in mm")
+	cmd.Flags().BoolVar(&pageNumbers, "page-numbers", false, "Add page numbers")
+	cmd.Flags().StringVar(&pageNumPos, "page-num-pos", "bottom-center", "Page number position: bottom-left, bottom-center, bottom-right")
+	cmd.Flags().Float64Var(&lineSpacing, "line-spacing", 1.2, "Line height multiplier")
 	_ = cmd.MarkFlagRequired("output")
 
 	return cmd

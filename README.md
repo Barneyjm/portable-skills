@@ -72,11 +72,11 @@ ps-image resize input.png --width 800
 |-------|-------------|----------|
 | [ps-image](#ps-image) | Image processing | resize, convert, info |
 | [ps-pptx](#ps-pptx) | PowerPoint files | create, text, info, list, themes |
-| [ps-pdf](#ps-pdf) | PDF files | create, text, info |
+| [ps-pdf](#ps-pdf) | PDF files | create (text/markdown/JSON), text, info |
 | [ps-qr](#ps-qr) | QR code generation | generate |
 | [ps-archive](#ps-archive) | Zip archives | zip, unzip, list |
 | [ps-hash](#ps-hash) | File checksums | calc, verify |
-| [ps-audio](#ps-audio) | Audio metadata | info, art |
+| [ps-audio](#ps-audio) | Audio metadata | info, set, art, clear |
 
 ---
 
@@ -147,7 +147,7 @@ ps-pptx themes
 
 ### ps-pdf
 
-Extract text from PDFs and create PDFs from text.
+Extract text from PDFs and create PDFs from text, Markdown, or structured JSON.
 
 ```bash
 # Extract text
@@ -159,7 +159,41 @@ ps-pdf info document.pdf --json
 
 # Create PDF from text
 ps-pdf create notes.txt -o notes.pdf --title "My Notes"
-echo "Hello World" | ps-pdf create - -o hello.pdf
+
+# Create from Markdown with page numbers
+ps-pdf create readme.md -o readme.pdf --markdown --page-numbers
+
+# Create with custom margins
+ps-pdf create doc.txt -o doc.pdf --margin-top 25 --margin-bottom 25
+
+# Full control with JSON input
+ps-pdf create layout.json -o report.pdf --json
+```
+
+**Markdown Support:** Headings, bullet/numbered lists, code blocks, horizontal rules
+
+**JSON Input** for full control over document layout:
+```json
+{
+  "options": {
+    "title": "My Document",
+    "pageNumbers": true,
+    "marginTop": 25
+  },
+  "markdown": "# Introduction\n\nThis is a paragraph.\n\n- Item 1\n- Item 2"
+}
+```
+
+Or with explicit paragraphs:
+```json
+{
+  "paragraphs": [
+    { "type": "heading", "level": 1, "content": "Title" },
+    { "type": "text", "content": "Paragraph text." },
+    { "type": "list", "items": ["One", "Two"], "ordered": true },
+    { "type": "code", "content": "console.log('hello');" }
+  ]
+}
 ```
 
 ---
@@ -223,18 +257,30 @@ ps-hash verify download.iso abc123def456...
 
 ### ps-audio
 
-Read metadata from audio files and extract album art.
+Read and write metadata on audio files, extract and set album art.
 
 ```bash
 # Show metadata
 ps-audio info song.mp3
 ps-audio info album/*.flac --json
 
+# Set tags (MP3 only for writes)
+ps-audio set song.mp3 --title "My Song" --artist "Artist Name"
+ps-audio set song.mp3 --album "Album" --year 2024 --track 5
+
+# Set album art
+ps-audio set song.mp3 --art cover.jpg
+
 # Extract album art
 ps-audio art song.mp3 -o cover.jpg
+
+# Clear tags
+ps-audio clear song.mp3           # All tags
+ps-audio clear song.mp3 --art     # Just album art
 ```
 
-**Formats:** MP3, M4A, FLAC, OGG, WAV, AIFF
+**Read Formats:** MP3, M4A, FLAC, OGG, WAV, AIFF
+**Write Formats:** MP3 (ID3v2)
 
 ---
 

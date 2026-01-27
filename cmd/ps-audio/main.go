@@ -21,12 +21,14 @@ func main() {
 	rootCmd := &cobra.Command{
 		Use:     "ps-audio",
 		Short:   "Audio metadata without dependencies",
-		Long:    "Read audio file metadata and extract album art. Supports MP3, M4A, FLAC, OGG.",
+		Long:    "Read and write audio file metadata, extract and set album art. Supports MP3, M4A, FLAC, OGG.",
 		Version: version,
 	}
 
 	rootCmd.AddCommand(newInfoCmd())
 	rootCmd.AddCommand(newArtCmd())
+	rootCmd.AddCommand(newSetCmd())
+	rootCmd.AddCommand(newClearCmd())
 	rootCmd.AddCommand(newInstallSkillCmd())
 	rootCmd.AddCommand(newUninstallSkillCmd())
 
@@ -170,6 +172,174 @@ func newArtCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&output, "output", "o", "", "Output file path (default: <input>.jpg)")
+
+	return cmd
+}
+
+func newSetCmd() *cobra.Command {
+	var (
+		title       string
+		artist      string
+		album       string
+		albumArtist string
+		year        int
+		track       int
+		trackTotal  int
+		disc        int
+		discTotal   int
+		genre       string
+		composer    string
+		comment     string
+		artPath     string
+		jsonOutput  bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "set <file>",
+		Short: "Set audio file tags",
+		Long: `Set or update tags on an audio file.
+
+Currently supports:
+  - MP3 files (ID3v2 tags) - full read/write support
+
+Note: FLAC, M4A, and OGG files are currently read-only.
+
+Examples:
+  ps-audio set song.mp3 --title "My Song" --artist "Artist Name"
+  ps-audio set song.mp3 --album "Album" --year 2024 --track 5 --track-total 12
+  ps-audio set song.mp3 --art cover.jpg
+  ps-audio set song.mp3 --genre "Rock" --comment "Great track"`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			path := args[0]
+
+			// Build update struct with only flags that were explicitly set
+			updates := audio.TagUpdate{}
+
+			if cmd.Flags().Changed("title") {
+				updates.Title = &title
+			}
+			if cmd.Flags().Changed("artist") {
+				updates.Artist = &artist
+			}
+			if cmd.Flags().Changed("album") {
+				updates.Album = &album
+			}
+			if cmd.Flags().Changed("album-artist") {
+				updates.AlbumArtist = &albumArtist
+			}
+			if cmd.Flags().Changed("year") {
+				updates.Year = &year
+			}
+			if cmd.Flags().Changed("track") {
+				updates.Track = &track
+			}
+			if cmd.Flags().Changed("track-total") {
+				updates.TrackTotal = &trackTotal
+			}
+			if cmd.Flags().Changed("disc") {
+				updates.Disc = &disc
+			}
+			if cmd.Flags().Changed("disc-total") {
+				updates.DiscTotal = &discTotal
+			}
+			if cmd.Flags().Changed("genre") {
+				updates.Genre = &genre
+			}
+			if cmd.Flags().Changed("composer") {
+				updates.Composer = &composer
+			}
+			if cmd.Flags().Changed("comment") {
+				updates.Comment = &comment
+			}
+			if cmd.Flags().Changed("art") {
+				updates.ArtPath = &artPath
+			}
+
+			result, err := audio.WriteTags(path, updates)
+			if err != nil {
+				if jsonOutput {
+					errorResult := &audio.WriteResult{
+						Path:    path,
+						Success: false,
+						Error:   err.Error(),
+					}
+					return skill.WriteJSON(errorResult)
+				}
+				return err
+			}
+
+			if jsonOutput {
+				return skill.WriteJSON(result)
+			}
+
+			if len(result.Updated) == 0 {
+				fmt.Println("No changes made (no flags specified)")
+				return nil
+			}
+
+			fmt.Printf("Updated %s:\n", filepath.Base(path))
+			for _, field := range result.Updated {
+				fmt.Printf("  - %s\n", field)
+			}
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&title, "title", "", "Track title")
+	cmd.Flags().StringVar(&artist, "artist", "", "Artist name")
+	cmd.Flags().StringVar(&album, "album", "", "Album name")
+	cmd.Flags().StringVar(&albumArtist, "album-artist", "", "Album artist")
+	cmd.Flags().IntVar(&year, "year", 0, "Release year")
+	cmd.Flags().IntVar(&track, "track", 0, "Track number")
+	cmd.Flags().IntVar(&trackTotal, "track-total", 0, "Total tracks")
+	cmd.Flags().IntVar(&disc, "disc", 0, "Disc number")
+	cmd.Flags().IntVar(&discTotal, "disc-total", 0, "Total discs")
+	cmd.Flags().StringVar(&genre, "genre", "", "Genre")
+	cmd.Flags().StringVar(&composer, "composer", "", "Composer")
+	cmd.Flags().StringVar(&comment, "comment", "", "Comment")
+	cmd.Flags().StringVar(&artPath, "art", "", "Path to album art image")
+	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Output as JSON")
+
+	return cmd
+}
+
+func newClearCmd() *cobra.Command {
+	var (
+		artOnly bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "clear <file>",
+		Short: "Clear tags from an audio file",
+		Long: `Clear all tags or just album art from an audio file.
+
+Currently supports MP3 files only.
+
+Examples:
+  ps-audio clear song.mp3           # Clear all tags
+  ps-audio clear song.mp3 --art     # Remove only album art`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			path := args[0]
+
+			if artOnly {
+				if err := audio.RemovePicture(path); err != nil {
+					return err
+				}
+				fmt.Printf("Removed album art from %s\n", filepath.Base(path))
+				return nil
+			}
+
+			if err := audio.ClearTags(path); err != nil {
+				return err
+			}
+			fmt.Printf("Cleared all tags from %s\n", filepath.Base(path))
+			return nil
+		},
+	}
+
+	cmd.Flags().BoolVar(&artOnly, "art", false, "Remove only album art, keep other tags")
 
 	return cmd
 }
