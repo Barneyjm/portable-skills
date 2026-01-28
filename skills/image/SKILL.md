@@ -1,8 +1,6 @@
 ---
 name: portable-image
-description: Process images without system dependencies. Resize, convert formats, extract metadata.
-version: 1.0.0
-binary: ps-image
+description: Process images without dependencies. Resize, convert formats, extract metadata.
 ---
 
 # Image Processing Skill

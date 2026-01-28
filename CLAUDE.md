@@ -40,6 +40,9 @@ All pure Go (no CGO):
 - `github.com/rwcarlsen/goexif` - EXIF extraction
 - `github.com/spf13/cobra` - CLI framework
 - `golang.org/x/image` - Additional format support (webp, bmp, tiff)
+- `github.com/bogem/id3v2/v2` - MP3 ID3v2 tag reading/writing
+- `github.com/dhowden/tag` - Audio metadata reading (multi-format)
+- `github.com/abema/go-mp4` - MP4/MOV video container parsing
 
 ## Getting Started
 
@@ -99,12 +102,21 @@ cat input.png | ps-image resize - --width 400 -o - > output.png
 - **Releases**: Cosign keyless signing, SHA256 checksums, SBOM generation
 - **Platforms**: linux/darwin (amd64, arm64), windows (amd64)
 
-## Future Work (Phase 2+)
+## Documentation Requirements
 
-- `ps-pdf` - Extract, merge, split PDFs
+**IMPORTANT:** When making changes to skill functionality, always update:
+
+1. **SKILL.md** - Update the corresponding `skills/<name>/SKILL.md` file with new commands, flags, and examples
+2. **README.md** - Update the main README with relevant changes to the skill's section
+3. **CLAUDE.md** - Update this file if there are architectural changes or new patterns
+
+This ensures users and agents can discover and use new features correctly.
+
+## Future Work
+
 - `ps-office` - Read/write docx, xlsx
-- `ps-audio` - Metadata, format conversion
-- `ps-video` - Metadata, thumbnail generation
+- `ps-video` - Thumbnail generation (requires external codec)
+- Extend write support for FLAC, M4A in ps-audio
 
 ## Common Tasks
 

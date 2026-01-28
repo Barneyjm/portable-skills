@@ -1,8 +1,6 @@
 ---
 name: portable-hash
 description: Calculate and verify file checksums. Supports MD5, SHA1, SHA256, SHA512.
-version: 1.0.0
-binary: ps-hash
 ---
 
 # Hash/Checksum Skill

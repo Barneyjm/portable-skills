@@ -1,8 +1,6 @@
 ---
 name: portable-qr
 description: Generate QR codes from text or URLs. Output as PNG or ASCII art.
-version: 1.0.0
-binary: ps-qr
 ---
 
 # QR Code Skill

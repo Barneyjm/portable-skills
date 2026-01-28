@@ -1,8 +1,6 @@
 ---
 name: portable-archive
-description: Create and extract zip archives. No system dependencies required.
-version: 1.0.0
-binary: ps-archive
+description: Create and extract zip archives. No dependencies required.
 ---
 
 # Archive Skill

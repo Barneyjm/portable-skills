@@ -72,11 +72,12 @@ ps-image resize input.png --width 800
 |-------|-------------|----------|
 | [ps-image](#ps-image) | Image processing | resize, convert, info |
 | [ps-pptx](#ps-pptx) | PowerPoint files | create, text, info, list, themes |
-| [ps-pdf](#ps-pdf) | PDF files | create, text, info |
+| [ps-pdf](#ps-pdf) | PDF files | create (text/markdown/JSON), text, info |
 | [ps-qr](#ps-qr) | QR code generation | generate |
 | [ps-archive](#ps-archive) | Zip archives | zip, unzip, list |
 | [ps-hash](#ps-hash) | File checksums | calc, verify |
-| [ps-audio](#ps-audio) | Audio metadata | info, art |
+| [ps-audio](#ps-audio) | Audio metadata | info, set, art, clear |
+| [ps-video](#ps-video) | Video metadata | info, formats |
 
 ---
 
@@ -147,7 +148,7 @@ ps-pptx themes
 
 ### ps-pdf
 
-Extract text from PDFs and create PDFs from text.
+Extract text from PDFs and create PDFs from text, Markdown, or structured JSON.
 
 ```bash
 # Extract text
@@ -159,7 +160,41 @@ ps-pdf info document.pdf --json
 
 # Create PDF from text
 ps-pdf create notes.txt -o notes.pdf --title "My Notes"
-echo "Hello World" | ps-pdf create - -o hello.pdf
+
+# Create from Markdown with page numbers
+ps-pdf create readme.md -o readme.pdf --markdown --page-numbers
+
+# Create with custom margins
+ps-pdf create doc.txt -o doc.pdf --margin-top 25 --margin-bottom 25
+
+# Full control with JSON input
+ps-pdf create layout.json -o report.pdf --json
+```
+
+**Markdown Support:** Headings, bullet/numbered lists, code blocks, horizontal rules
+
+**JSON Input** for full control over document layout:
+```json
+{
+  "options": {
+    "title": "My Document",
+    "pageNumbers": true,
+    "marginTop": 25
+  },
+  "markdown": "# Introduction\n\nThis is a paragraph.\n\n- Item 1\n- Item 2"
+}
+```
+
+Or with explicit paragraphs:
+```json
+{
+  "paragraphs": [
+    { "type": "heading", "level": 1, "content": "Title" },
+    { "type": "text", "content": "Paragraph text." },
+    { "type": "list", "items": ["One", "Two"], "ordered": true },
+    { "type": "code", "content": "console.log('hello');" }
+  ]
+}
 ```
 
 ---
@@ -223,18 +258,64 @@ ps-hash verify download.iso abc123def456...
 
 ### ps-audio
 
-Read metadata from audio files and extract album art.
+Read and write metadata on audio files, extract and set album art.
 
 ```bash
 # Show metadata
 ps-audio info song.mp3
 ps-audio info album/*.flac --json
 
+# Set tags (MP3 only for writes)
+ps-audio set song.mp3 --title "My Song" --artist "Artist Name"
+ps-audio set song.mp3 --album "Album" --year 2024 --track 5
+
+# Set album art
+ps-audio set song.mp3 --art cover.jpg
+
 # Extract album art
 ps-audio art song.mp3 -o cover.jpg
+
+# Clear tags
+ps-audio clear song.mp3           # All tags
+ps-audio clear song.mp3 --art     # Just album art
 ```
 
-**Formats:** MP3, M4A, FLAC, OGG, WAV, AIFF
+**Read Formats:** MP3, M4A, FLAC, OGG, WAV, AIFF
+**Write Formats:** MP3 (ID3v2)
+
+---
+
+### ps-video
+
+Read video metadata including duration, resolution, codecs, frame rate, and more.
+
+```bash
+# Show metadata
+ps-video info video.mp4
+ps-video info *.mp4 --json
+
+# Detailed track information
+ps-video info movie.mp4 --detailed
+
+# List supported formats
+ps-video formats
+```
+
+**Output:**
+```
+File: video.mp4
+Format: MP4
+Duration: 2:30.500 (150.50 seconds)
+Resolution: 1920x1080
+Video Codec: H.264/AVC
+Frame Rate: 29.97 fps
+Audio Codec: AAC
+Audio Channels: stereo
+Bitrate: 5432 kbps
+Size: 98.45 MB
+```
+
+**Supported Formats:** MP4, M4V, MOV, 3GP
 
 ---
 
@@ -315,7 +396,9 @@ skills/
 │   └── SKILL.md
 ├── pptx/
 │   └── SKILL.md
-└── qr/
+├── qr/
+│   └── SKILL.md
+└── video/
     └── SKILL.md
 ```
 
@@ -351,7 +434,8 @@ portable-skills/
 │   ├── ps-image/           # Image skill CLI
 │   ├── ps-pdf/             # PDF skill CLI
 │   ├── ps-pptx/            # PowerPoint skill CLI
-│   └── ps-qr/              # QR code skill CLI
+│   ├── ps-qr/              # QR code skill CLI
+│   └── ps-video/           # Video skill CLI
 ├── pkg/
 │   ├── archive/            # Archive processing library
 │   ├── audio/              # Audio metadata library
@@ -360,7 +444,8 @@ portable-skills/
 │   ├── pdf/                # PDF processing library
 │   ├── pptx/               # PowerPoint processing library
 │   ├── qr/                 # QR code library
-│   └── skill/              # Skill protocol helpers
+│   ├── skill/              # Skill protocol helpers
+│   └── video/              # Video metadata library
 ├── skills/                 # SKILL.md files for each skill
 ├── dist/
 │   ├── homebrew/           # Homebrew formula

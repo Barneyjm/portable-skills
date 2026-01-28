@@ -1,8 +1,6 @@
 ---
 name: portable-pptx
-description: Read and create PowerPoint (.pptx) files with themes, images, shapes, and full positioning control.
-version: 2.0.0
-binary: ps-pptx
+description: Read and create PowerPoint (.pptx) files with themes, images, shapes, and positioning control.
 ---
 
 # PowerPoint Skill
