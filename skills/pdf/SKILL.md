@@ -1,8 +1,6 @@
 ---
 name: portable-pdf
-description: Extract text from PDFs and create PDFs from text, Markdown, or JSON. No system dependencies required.
-version: 2.0.0
-binary: ps-pdf
+description: Extract text from PDFs and create PDFs from text, Markdown, or JSON. No dependencies required.
 ---
 
 # PDF Skill

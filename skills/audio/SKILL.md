@@ -1,8 +1,6 @@
 ---
 name: portable-audio
 description: Read and write audio file metadata, extract and set album art. Supports MP3, M4A, FLAC, OGG.
-version: 2.0.0
-binary: ps-audio
 ---
 
 # Audio Metadata Skill

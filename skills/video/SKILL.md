@@ -1,8 +1,6 @@
 ---
 name: portable-video
 description: Read video file metadata including duration, resolution, codecs, and more. Supports MP4, MOV, M4V.
-version: 1.0.0
-binary: ps-video
 ---
 
 # Video Metadata Skill
