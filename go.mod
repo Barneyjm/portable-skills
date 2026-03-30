@@ -1,8 +1,6 @@
 module github.com/Barneyjm/portable-skills
 
-go 1.24.1
-
-toolchain go1.24.7
+go 1.25.0
 
 require (
 	github.com/abema/go-mp4 v1.4.1
@@ -14,12 +12,12 @@ require (
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/spf13/cobra v1.10.2
-	golang.org/x/image v0.35.0
+	golang.org/x/image v0.38.0
 )
 
 require (
 	github.com/google/uuid v1.1.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
-	golang.org/x/text v0.33.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
 )
